@@ -3,11 +3,11 @@ const mongoose = require('mongoose')
 const schema = mongoose.Schema
 
 const serviceBookingSchema = new schema({
-    customer_id:{
+    customer_id: {
         type: schema.Types.ObjectId,
         ref: 'user'
     },
-    service_provider_id:{
+    service_provider_id: {
         type: schema.Types.ObjectId,
         ref: 'serviceProvider'
     },
@@ -24,7 +24,7 @@ const serviceBookingSchema = new schema({
         enum: ['pending', 'confirmed', 'completed', 'cancelled'],
         default: 'pending'
     }
-},{timestamps:true, versionKey:false})
+}, { timestamps: true, versionKey: false })
 
-const serviceBookingModel = mongoose.model('serviceBooking',serviceBookingSchema)
+const serviceBookingModel = mongoose.model('serviceBooking', serviceBookingSchema)
 module.exports = serviceBookingModel

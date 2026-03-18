@@ -1,22 +1,23 @@
-
-
 const express = require('express');
-const app = express();
-const rateLimiter = require('./app/utils/limiter')
-app.use(rateLimiter)
 
+const rateLimiter = require('./app/utils/limiter');
 const dbConnection = require("./app/config/dbConfig")
-dbConnection()
 
-app.use(express.json())
-app.use(express.urlencoded({extended:true}))
+const app = express();
 
+const port = 4000;
 
-const port = 4000
-app.listen(port,(error)=>{
-    if(error){
+app.use(rateLimiter);
+
+dbConnection();
+
+app.use(express.json());
+// app.use(express.urlencoded({extended:true}))
+
+app.listen(port, (error) => {
+    if (error) {
         console.log('Unable to run the server');
-    }else{
+    } else {
         console.log(`Server is running on this port: ${port}`)
     }
-})
+});

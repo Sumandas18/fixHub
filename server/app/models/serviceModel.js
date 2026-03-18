@@ -3,23 +3,23 @@ const mongoose = require('mongoose')
 const schema = mongoose.Schema
 
 const serviceSchema = new schema({
-    service_name:{
-        type:String,
-        required:true
+    service_name: {
+        type: String,
+        required: true
     },
-    service_description:{
-        type:String,
+    service_description: {
+        type: String,
     },
-    service_image:{
-        type:String,
+    service_image: {
+        type: String,
         default: "image.png"
     },
-    is_active:{
-        type:Boolean,
-        default:true
+    is_active: {
+        type: Boolean,
+        default: true
     }
 
-},{timestamps:true, versionKey:false})
+}, { timestamps: true, versionKey: false })
 
-const serviceModel = mongoose.model('service',serviceSchema)
+const serviceModel = mongoose.model('service', serviceSchema)
 module.exports = serviceModel
