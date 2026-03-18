@@ -14,6 +14,11 @@ const serviceSchema = new schema({
         type:String,
         default: "image.png"
     },
+    is_active:{
+        type:Boolean,
+        default:true
+    }
+
 },{timestamps:true, versionKey:false})
 
 const serviceModel = mongoose.model('services',serviceSchema)
