@@ -12,6 +12,14 @@ const serviceProviderSchema = new schema({
         ref: 'service'
     },
     service_area_zip: {
+        type: [String],
+        required: true
+    },
+    profile_img: {
+        type: String,
+        required: true
+    },
+    profile_img_url: {
         type: String,
         required: true
     },
@@ -23,9 +31,13 @@ const serviceProviderSchema = new schema({
         type: String,
         required: true
     },
-    isAvailable: {
+    isActive: {
         type: Boolean,
         default: true
+    },
+    isAvailable: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true, versionKey: false })
 

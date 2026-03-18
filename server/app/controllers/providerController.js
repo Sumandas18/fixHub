@@ -104,6 +104,7 @@ class ProviderController {
                 }
                 else {
                     const token = jwt.sign({
+                        user_id: existProvider._id,
                         user_name: existProvider.user_name,
                         user_email: existProvider.user_email,
                         user_role: existProvider.user_role,

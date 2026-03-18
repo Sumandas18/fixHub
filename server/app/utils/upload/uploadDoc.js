@@ -16,12 +16,12 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
-        folder: 'fixhub',
+        folder: 'fixhub/document',
         format: async (req, file) => 'pdf',
-        public_id: (req, file) => 'fixhub_' + file.originalname.split(" ").join("-") + Date.now()
+        public_id: (req, file) => 'fixhub-doc_' + file.originalname.split(" ").join("-") + Date.now()
     },
 });
 
-const Upload = multer({ storage: storage, limits: { fileSize: 3 * 1024 * 1024 } });
+const UploadDoc = multer({ storage: storage, limits: { fileSize: 3 * 1024 * 1024 } });
 
-module.exports = Upload;
+module.exports = UploadDoc;
