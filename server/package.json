@@ -1,0 +1,27 @@
+{
+  "name": "local_service_provider",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "Sourav & Suman",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js",
+    "dev": "nodemon app.js"
+  },
+  "dependencies": {
+    "csvtojson": "^2.0.14",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.3.1",
+    "helmet": "^8.1.0",
+    "joi": "^18.0.2",
+    "mongoose": "^9.3.1",
+    "morgan": "^1.10.1",
+    "multer": "^2.1.1",
+    "nodemon": "^3.1.14",
+    "pdfkit": "^0.18.0"
+  }
+}
