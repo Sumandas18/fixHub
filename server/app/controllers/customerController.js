@@ -2,13 +2,13 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const StatusCode = require("../utils/statusCode");
-const userModel = require("./../models/userModel");
-const checkProviderValidate = require("./../utils/validation/checkProviderValidation");
-class ProviderController {
+const userModel = require("../models/userModel");
+const checkCustomerValidate = require("./../utils/validation/checkCustomerValidation");
 
-    async providerRegister(req, res) {
+class CustomerController {
+
+    async customerRegister(req, res) {
         try {
-            let doc_url;
             const { user_name, user_email, user_password, user_contact, user_role, user_address } = req.body;
 
             if (!user_name || !user_email || !user_password || !user_contact || !user_address || !user_address.houseOrFlatNo ||
@@ -19,7 +19,7 @@ class ProviderController {
                 });
             }
 
-            const { data, error } = checkProviderValidate.validate(req.body);
+            const { data, error } = checkCustomerValidate.validate(req.body);
 
             if (error) {
                 return res.status(StatusCode.BAD_REQUEST).json({
@@ -28,9 +28,9 @@ class ProviderController {
                 });
             }
 
-            const existProvider = await userModel.findOne({ user_email });
+            const existCustomer = await userModel.findOne({ user_email });
 
-            if (existProvider) {
+            if (existCustomer) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
                     message: "User already exists"
@@ -40,11 +40,8 @@ class ProviderController {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(user_password, salt);
 
-            if (req.file) {
-                doc_url = req.file.path;
-            }
-            const providerObj = new userModel({
-                user_name, user_email, user_password: hashedPassword, user_contact, user_role, doc_url,
+            const customerObj = new userModel({
+                user_name, user_email, user_password: hashedPassword, user_contact, user_role,
                 user_address: {
                     houseOrFlatNo: user_address.houseOrFlatNo,
                     buildingName: user_address.buildingName,
@@ -59,12 +56,12 @@ class ProviderController {
                 }
             });
 
-            const provider = await providerObj.save();
+            const customer = await customerObj.save();
 
             return res.status(StatusCode.CREATED).json({
                 success: true,
                 message: "Registration successful. Please verify your email",
-                data: provider
+                data: customer
             });
 
         } catch (err) {
@@ -75,7 +72,7 @@ class ProviderController {
         }
     }
 
-    async providerLogin(req, res) {
+    async customerLogin(req, res) {
         try {
             const { user_email, user_password } = req.body;
 
@@ -86,15 +83,15 @@ class ProviderController {
                 });
             }
 
-            const existProvider = await userModel.find({ user_email });
-            if (!existProvider) {
+            const existCustomer = await userModel.find({ user_email });
+            if (!existCustomer) {
                 return res.status(StatusCode.NOT_FOUND).json({
                     success: false,
                     message: "User doesn't exist"
                 });
             }
             else {
-                const verifyPassword = await bcrypt.compare(existProvider.user_password, user_password);
+                const verifyPassword = await bcrypt.compare(existCustomer.user_password, user_password);
 
                 if (!verifyPassword) {
                     return res.status(StatusCode.BAD_REQUEST).json({
@@ -104,22 +101,22 @@ class ProviderController {
                 }
                 else {
                     const token = jwt.sign({
-                        user_name: existProvider.user_name,
-                        user_email: existProvider.user_email,
-                        user_role: existProvider.user_role,
-                        user_address: existProvider.user_address,
-                        user_contact: existProvider.user_contact
+                        user_name: existCustomer.user_name,
+                        user_email: existCustomer.user_email,
+                        user_role: existCustomer.user_role,
+                        user_address: existCustomer.user_address,
+                        user_contact: existCustomer.user_contact
                     }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
 
                     return res.status(StatusCode.SUCCESS).json({
                         success: true,
                         message: "Login successful",
                         data: {
-                            user_name: existProvider.user_name,
-                            user_email: existProvider.user_email,
-                            user_role: existProvider.user_role,
-                            user_address: existProvider.user_address,
-                            user_contact: existProvider.user_contact
+                            user_name: existCustomer.user_name,
+                            user_email: existCustomer.user_email,
+                            user_role: existCustomer.user_role,
+                            user_address: existCustomer.user_address,
+                            user_contact: existCustomer.user_contact
                         },
                         token
                     });
@@ -135,4 +132,4 @@ class ProviderController {
     }
 }
 
-module.exports = new ProviderController();
+module.exports = new CustomerController();

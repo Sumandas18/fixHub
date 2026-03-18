@@ -2,6 +2,7 @@ const express = require('express');
 
 const rateLimiter = require('./app/utils/limiter');
 const dbConnection = require("./app/config/dbConfig")
+const mainRoute = require("./app/routes/indexRoute");
 
 const app = express();
 
@@ -12,6 +13,9 @@ app.use(rateLimiter);
 dbConnection();
 
 app.use(express.json());
+
+app.use(mainRoute);
+
 // app.use(express.urlencoded({extended:true}))
 
 app.listen(port, (error) => {

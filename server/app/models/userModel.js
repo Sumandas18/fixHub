@@ -6,78 +6,80 @@ const userSchema = new Schema(
     {
         user_name: {
             type: String,
-            required: true,
+            required: true
         },
         user_email: {
             type: String,
             required: true,
             unique: true,
+            lowercase: true,
+            trim: true
         },
         user_password: {
             type: String,
-            required: true,
+            required: true
         },
         user_role: {
             type: String,
             enum: ["admin", "provider", "customer"],
             default: "customer",
-            required: true,
+            required: true
         },
         user_contact: {
-            type: String,
+            type: String
         },
         user_address: {
             houseOrFlatNo: {
-                type: String,
+                type: String
             },
             buildingName: {
-                type: String,
+                type: String
             },
             street: {
-                type: String,
+                type: String
             },
             area: {
-                type: String,
+                type: String
             },
             landmark: {
-                type: String,
+                type: String
             },
             city: {
-                type: String,
+                type: String
             },
             district: {
-                type: String,
+                type: String
             },
             state: {
-                type: String,
+                type: String
             },
             pinCode: {
-                type: String,
+                type: String
             },
             country: {
                 type: String,
-                default: "India",
+                default: "India"
             },
         },
         doc_url: {
-            type: String,
+            type: String
         },
         isApproved: {
             type: Boolean,
-            default: false,
+            default: false
         },
         isBlocked: {
             type: Boolean,
-            default: false,
+            default: false
         },
         createdAt: {
             type: Date,
-            default: new Date(),
+            default: new Date()
         },
     },
     {
         timestamps: true,
-        versionKey: false,
+        versionKey: false
     },
 );
 

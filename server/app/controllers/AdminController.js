@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 
 const StatusCode = require("../utils/statusCode");
 const userModel = require("./../models/userModel");
+const checkAdminValidate = require("./../utils/validation/checkAdminValidation");
 
 class AdminController {
 
@@ -13,7 +14,16 @@ class AdminController {
             if (!user_name || !user_email || !user_password || !user_role) {
                 return res.status(StatusCode.NOT_FOUND).json({
                     success: false,
-                    message: "All fields are required"
+                    message: "All required fields must be filled"
+                });
+            }
+
+            const { data, error } = checkAdminValidate.validate({ user_name, user_email, user_password });
+
+            if (error) {
+                return res.status(StatusCode.BAD_REQUEST).json({
+                    success: false,
+                    message: error.details.map(err => err.message)
                 });
             }
 
@@ -34,7 +44,8 @@ class AdminController {
 
             return res.status(StatusCode.CREATED).json({
                 success: true,
-                message: "Registration successful. Please verify your email"
+                message: "Registration successful.",
+                data: admin
             });
         }
         catch (err) {
@@ -52,7 +63,7 @@ class AdminController {
             if (!user_email || !user_password) {
                 return res.status(StatusCode.NOT_FOUND).json({
                     success: false,
-                    message: "All fields are required"
+                    message: "All required fields must be filled"
                 });
             }
 
