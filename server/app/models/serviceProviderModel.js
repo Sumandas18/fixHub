@@ -3,6 +3,14 @@ const mongoose = require('mongoose')
 const schema = mongoose.Schema
 
 const serviceProviderSchema = new schema({
+    provider_id:{
+        type: schema.Types.ObjectId,
+        ref: 'user'
+    },
+    service_id:{
+        type: schema.Types.ObjectId,
+        ref: 'service'
+    },
     service_area_zip:{
         type:String,
         required:true
@@ -21,5 +29,5 @@ const serviceProviderSchema = new schema({
     }
 },{timestamps:true, versionKey:false})
 
-const serviceProviderModel = mongoose.model('serviceProviders',serviceProviderSchema)
+const serviceProviderModel = mongoose.model('serviceProvider',serviceProviderSchema)
 module.exports = serviceProviderModel

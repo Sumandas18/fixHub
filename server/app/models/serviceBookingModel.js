@@ -3,6 +3,14 @@ const mongoose = require('mongoose')
 const schema = mongoose.Schema
 
 const serviceBookingSchema = new schema({
+    customer_id:{
+        type: schema.Types.ObjectId,
+        ref: 'user'
+    },
+    service_provider_id:{
+        type: schema.Types.ObjectId,
+        ref: 'serviceProvider'
+    },
     scheduled_date: {
         type: Date,
         required: true
@@ -18,5 +26,5 @@ const serviceBookingSchema = new schema({
     }
 },{timestamps:true, versionKey:false})
 
-const serviceBookingModel = mongoose.model('serviceBookings',serviceBookingSchema)
+const serviceBookingModel = mongoose.model('serviceBooking',serviceBookingSchema)
 module.exports = serviceBookingModel

@@ -21,5 +21,5 @@ const serviceSchema = new schema({
 
 },{timestamps:true, versionKey:false})
 
-const serviceModel = mongoose.model('services',serviceSchema)
+const serviceModel = mongoose.model('service',serviceSchema)
 module.exports = serviceModel
