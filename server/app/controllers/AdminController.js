@@ -1,129 +1,19 @@
 const StatusCode = require("../utils/statusCode");
 const userModel = require("../models/userModel");
-const serviceModel = require("../models/serviceModel");
-const serviceProviderModel = require("../models/serviceProviderModel");
-const bookingModel = require("../models/serviceBookingModel");
-const ratingModel = require("../models/serviceRatingModel");
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
-const checkAdminValidate = require("../utils/validation/checkAdminValidation");
-
 
 class AdminController {
-   async adminRegister(req, res) {
-        try {
-            const { user_name, user_email, user_password, user_role } = req.body;
- 
-            if (!user_name || !user_email || !user_password || !user_role) {
-                return res.status(StatusCode.NOT_FOUND).json({
-                    success: false,
-                    message: "All required fields must be filled"
-                });
-            }
- 
-            const { data, error } = checkAdminValidate.validate({ user_name, user_email, user_password });
- 
-            if (error) {
-                return res.status(StatusCode.BAD_REQUEST).json({
-                    success: false,
-                    message: error.details.map(err => err.message)
-                });
-            }
- 
-            const existAdmin = await userModel.find({ user_email });
-            if (existAdmin) {
-                return res.status(StatusCode.BAD_REQUEST).json({
-                    success: false,
-                    message: "User already exist"
-                });
-            }
- 
-            const salt = await bcrypt.genSalt(10);
-            const hashPassword = bcrypt.hashSync(password, salt);
- 
-            const adminObj = new userModel({ user_name, user_email, user_password: hashPassword, user_role });
- 
-            const admin = await adminObj.save();
- 
-            return res.status(StatusCode.CREATED).json({
-                success: true,
-                message: "Registration successful.",
-                data: admin
-            });
-        }
-        catch (err) {
-            return res.status(StatusCode.SERVER_ERROR).json({
-                success: false,
-                message: err.message
-            });
-        }
-    }
- 
-    async adminLogin(req, res) {
-        try {
-            const { user_email, user_password } = req.body;
- 
-            if (!user_email || !user_password) {
-                return res.status(StatusCode.NOT_FOUND).json({
-                    success: false,
-                    message: "All required fields must be filled"
-                });
-            }
- 
-            const existAdmin = await userModel.find({ user_email });
-            if (!existAdmin) {
-                return res.status(StatusCode.NOT_FOUND).json({
-                    success: false,
-                    message: "User doesn't exist"
-                });
-            }
-            else {
-                const verifyPassword = await bcrypt.compare(existAdmin.user_password, user_password);
- 
-                if (!verifyPassword) {
-                    return res.status(StatusCode.BAD_REQUEST).json({
-                        success: false,
-                        message: "Invalid password"
-                    });
-                }
-                else {
-                    const token = jwt.sign({
-                        user_name: existAdmin.user_name,
-                        user_email: existAdmin.user_email,
-                        user_role: existAdmin.user_role
-                    }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
- 
-                    return res.status(StatusCode.SUCCESS).json({
-                        success: true,
-                        message: "Login successful",
-                        data: {
-                            user_name: existAdmin.user_name,
-                            user_email: existAdmin.user_email,
-                            user_role: existAdmin.user_role
-                        },
-                        token
-                    });
-                }
-            }
-        }
-        catch (err) {
-            return res.status(StatusCode.SERVER_ERROR).json({
-                success: false,
-                message: err.message
-            });
-        }
-    }
 
-
-  async getAllUsers(req, res) {
+  async getAllAdmins(req, res) {
     try {
-      const users = await userModel.find();
+      const admins = await userModel.find({ user_role: "admin" });
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,
-        data: users
+        count: admins.length,
+        data: admins
       });
-    } catch (error) {
+    }
+    catch (error) {
       return res.status(StatusCode.SERVER_ERROR).json({
         success: false,
         message: error.message
@@ -131,50 +21,25 @@ class AdminController {
     }
   }
 
-  async blockUnblockUser(req, res) {
+  async deleteAdmin(req, res) {
     try {
-      const user = await userModel.findById(req.params.id);
+      const adminId = req.params.id;
 
-      if (!user) {
+      if (!adminId) {
         return res.status(StatusCode.NOT_FOUND).json({
           success: false,
-          message: "User not found"
-        });
+          message: "Admin ID is required"
+        })
       }
-
-      user.isBlocked = !user.isBlocked;
-      await user.save();
-
-      return res.status(StatusCode.SUCCESS).json({
-        success: true,
-        message: `User ${user.isBlocked ? "blocked" : "unblocked"}`
-      });
-
-    } catch (error) {
-      return res.status(StatusCode.SERVER_ERROR).json({
-        success: false,
-        message: error.message
-      });
-    }
-  }
-
-  async deleteUser(req, res) {
-    try {
-      const user = await userModel.findByIdAndDelete(req.params.id);
-
-      if (!user) {
-        return res.status(StatusCode.NOT_FOUND).json({
-          success: false,
-          message: "User not found"
-        });
-      }
+      const user = await userModel.findByIdAndDelete(adminId);
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,
         message: "User deleted"
       });
 
-    } catch (error) {
+    }
+    catch (error) {
       return res.status(StatusCode.SERVER_ERROR).json({
         success: false,
         message: error.message
@@ -182,220 +47,6 @@ class AdminController {
     }
   }
 
-  async createService(req, res) {
-    try {
-      const { service_name, service_description } = req.body;
-
-      if (!service_name) {
-        return res.status(StatusCode.BAD_REQUEST).json({
-          success: false,
-          message: "Service name required"
-        });
-      }
-
-      const service = await serviceModel.create({
-        service_name,
-        service_description,
-        service_image: req.file ? req.file.path : undefined
-      });
-
-      return res.status(StatusCode.CREATED).json({
-        success: true,
-        data: service
-      });
-
-    } catch (error) {
-      return res.status(StatusCode.SERVER_ERROR).json({
-        success: false,
-        message: error.message
-      });
-    }
-  }
-
-  async getAllServices(req, res) {
-    try {
-      const services = await serviceModel.find();
-
-      return res.status(StatusCode.SUCCESS).json({
-        success: true,
-        data: services
-      });
-
-    } catch (error) {
-      return res.status(StatusCode.SERVER_ERROR).json({
-        success: false,
-        message: error.message
-      });
-    }
-  }
-
-  async toggleService(req, res) {
-    try {
-      const service = await serviceModel.findById(req.params.id);
-
-      if (!service) {
-        return res.status(StatusCode.NOT_FOUND).json({
-          success: false,
-          message: "Service not found"
-        });
-      }
-
-      service.is_active = !service.is_active;
-      await service.save();
-
-      return res.status(StatusCode.SUCCESS).json({
-        success: true,
-        message: `Service ${service.is_active ? "activated" : "deactivated"}`
-      });
-
-    } catch (error) {
-      return res.status(StatusCode.SERVER_ERROR).json({
-        success: false,
-        message: error.message
-      });
-    }
-  }
-
-  async deleteService(req, res) {
-    try {
-      await serviceModel.findByIdAndDelete(req.params.id);
-
-      return res.status(StatusCode.SUCCESS).json({
-        success: true,
-        message: "Service deleted"
-      });
-
-    } catch (error) {
-      return res.status(StatusCode.SERVER_ERROR).json({
-        success: false,
-        message: error.message
-      });
-    }
-  }
-
-  async approveProvider(req, res) {
-    try {
-      const user = await userModel.findById(req.params.id);
-
-      if (!user || user.user_role !== "provider") {
-        return res.status(StatusCode.NOT_FOUND).json({
-          success: false,
-          message: "Provider not found"
-        });
-      }
-
-      user.isApproved = true;
-      await user.save();
-
-      return res.status(StatusCode.SUCCESS).json({
-        success: true,
-        message: "Provider approved"
-      });
-
-    } catch (error) {
-      return res.status(StatusCode.SERVER_ERROR).json({
-        success: false,
-        message: error.message
-      });
-    }
-  }
-
-  async getAllProviders(req, res) {
-    try {
-      const providers = await serviceProviderModel.find()
-        .populate("provider_id")
-        .populate("service_id");
-
-      return res.status(StatusCode.SUCCESS).json({
-        success: true,
-        data: providers
-      });
-
-    } catch (error) {
-      return res.status(StatusCode.SERVER_ERROR).json({
-        success: false,
-        message: error.message
-      });
-    }
-  }
-
-  async getAllBookings(req, res) {
-    try {
-      const bookings = await bookingModel.find()
-        .populate("customer_id")
-        .populate("service_provider_id");
-
-      return res.status(StatusCode.SUCCESS).json({
-        success: true,
-        data: bookings
-      });
-
-    } catch (error) {
-      return res.status(StatusCode.SERVER_ERROR).json({
-        success: false,
-        message: error.message
-      });
-    }
-  }
-
-  async updateBookingStatus(req, res) {
-    try {
-      const { status } = req.body;
-
-      const booking = await bookingModel.findByIdAndUpdate(
-        req.params.id,
-        { status },
-        { new: true }
-      );
-
-      return res.status(StatusCode.SUCCESS).json({
-        success: true,
-        data: booking
-      });
-
-    } catch (error) {
-      return res.status(StatusCode.SERVER_ERROR).json({
-        success: false,
-        message: error.message
-      });
-    }
-  }
-
-  async getAllRatings(req, res) {
-    try {
-      const ratings = await ratingModel.find()
-        .populate("customer_id")
-        .populate("provider_id");
-
-      return res.status(StatusCode.SUCCESS).json({
-        success: true,
-        data: ratings
-      });
-
-    } catch (error) {
-      return res.status(StatusCode.SERVER_ERROR).json({
-        success: false,
-        message: error.message
-      });
-    }
-  }
-
-  async deleteRating(req, res) {
-    try {
-      await ratingModel.findByIdAndDelete(req.params.id);
-
-      return res.status(StatusCode.SUCCESS).json({
-        success: true,
-        message: "Rating deleted"
-      });
-
-    } catch (error) {
-      return res.status(StatusCode.SERVER_ERROR).json({
-        success: false,
-        message: error.message
-      });
-    }
-  }
 }
 
 module.exports = new AdminController();

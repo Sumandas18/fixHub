@@ -9,8 +9,13 @@ const serviceSchema = new schema({
     },
     service_description: {
         type: String,
+        required:true
     },
     service_image: {
+        type: String,
+        default: "image.png"
+    },
+    service_image_url: {
         type: String,
         default: "image.png"
     },

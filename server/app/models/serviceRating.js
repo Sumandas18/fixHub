@@ -21,11 +21,8 @@ const serviceRatingSchema = new schema({
     },
     service_description: {
         type: String,
-    },
-    service_image: {
-        type: String,
-        default: "image.png"
-    },
+        required: true
+    }
 }, { timestamps: true, versionKey: false })
 
 const serviceRatingModel = mongoose.model('serviceRating', serviceRatingSchema)

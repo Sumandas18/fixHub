@@ -8,10 +8,10 @@ class RatingController {
     try {
       const { booking_id, stars, service_description } = req.body;
 
-      if (!booking_id || !stars) {
+      if (!booking_id || !stars || !service_description) {
         return res.status(StatusCode.BAD_REQUEST).json({
           success: false,
-          message: "Booking and stars required",
+          message: "All fields are required",
         });
       }
 
@@ -27,7 +27,7 @@ class RatingController {
       if (booking.customer_id.toString() !== req.user._id.toString()) {
         return res.status(StatusCode.FORBIDDEN).json({
           success: false,
-          message: "Unauthorized",
+          message: "Unauthorized access",
         });
       }
 
@@ -38,17 +38,19 @@ class RatingController {
         });
       }
 
-      const rating = await ratingModel.create({
+      const ratingObj = new ratingModel({
         customer_id: req.user._id,
         provider_id: booking.service_provider_id,
         booking_id,
         stars,
-        service_description,
-      });
+        service_description
+      })
+
+      const rating = await ratingObj.save();
 
       return res.status(StatusCode.CREATED).json({
         success: true,
-        message: "Rating submitted",
+        message: "Rating submitted successfully",
         data: rating,
       });
 
@@ -60,22 +62,60 @@ class RatingController {
     }
   }
 
-
   async getRatingsByProvider(req, res) {
     try {
-      const ratings = await ratingModel.find({
-        provider_id: req.params.providerId,
-      }).populate("customer_id");
+      const provider_id = req.params.providerId;
+
+      const ratings = await ratingModel.find({ provider_id }).populate("customer_id");
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,
-        data: ratings,
+        message: "Provider wise rating",
+        data: ratings
       });
 
     } catch (error) {
       return res.status(StatusCode.SERVER_ERROR).json({
         success: false,
         message: error.message,
+      });
+    }
+  }
+
+  async getAllRatings(req, res) {
+    try {
+      const ratings = await ratingModel.find()
+        .populate("customer_id").populate("provider_id");
+
+      return res.status(StatusCode.SUCCESS).json({
+        success: true,
+        message: "All available ratings",
+        data: ratings
+      });
+
+    } catch (error) {
+      return res.status(StatusCode.SERVER_ERROR).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  async deleteRating(req, res) {
+    try {
+      const ratingId = req.params.id;
+
+      await ratingModel.findByIdAndDelete(ratingId);
+
+      return res.status(StatusCode.SUCCESS).json({
+        success: true,
+        message: "Rating deleted successfully"
+      });
+
+    } catch (error) {
+      return res.status(StatusCode.SERVER_ERROR).json({
+        success: false,
+        message: error.message
       });
     }
   }

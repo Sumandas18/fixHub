@@ -1,36 +1,24 @@
 const express = require("express");
 
-const adminController = require("../controllers/AdminController");
+
+const AdminAuthController = require("../controllers/auth/AdminAuthController");
+const adminController = require("../controllers/adminController");
+const userController = require("./../controllers/userController");
 const userAuthCheck = require("../middleware/userAuthCheck");
 
 
 const Router = express.Router();
 
 // Auth
-Router.post("/register", adminController.adminRegister);
-Router.post("/login", adminController.adminLogin);
+Router.post("/register", AdminAuthController.adminRegister);
+Router.post("/login", AdminAuthController.adminLogin);
 
-// Users
-Router.get("/users", userAuthCheck(['admin']), adminController.getAllUsers);
-Router.put("/block/:id", userAuthCheck(['admin']), adminController.blockUnblockUser);
-Router.delete("/delete-user/:id", userAuthCheck(['admin']), adminController.deleteUser);
+// Profile 
+Router.get("/profile", userAuthCheck(['admin']), userController.fetchProfile);
+Router.patch("/password", userAuthCheck(['admin']), userController.updatePassword);
 
-// Services
-Router.post("/service", userAuthCheck(['admin']), adminController.createService);
-Router.get("/services", userAuthCheck(['admin']), adminController.getAllServices);
-Router.put("/service-toggle/:id", userAuthCheck(['admin']), adminController.toggleService);
-Router.delete("/service/:id", userAuthCheck(['admin']), adminController.deleteService);
-
-// Providers
-Router.put("/approve-provider/:id", userAuthCheck(['admin']), adminController.approveProvider);
-Router.get("/providers", userAuthCheck(['admin']), adminController.getAllProviders);
-
-// Bookings
-Router.get("/bookings", userAuthCheck(['admin']), adminController.getAllBookings);
-Router.put("/booking-status/:id", userAuthCheck(['admin']), adminController.updateBookingStatus);
-
-// Ratings
-Router.get("/ratings", userAuthCheck(['admin']), adminController.getAllRatings);
-Router.delete("/rating/:id", userAuthCheck(['admin']), adminController.deleteRating);
+Router.get("/", userAuthCheck(['admin']), adminController.getAllAdmins);
+Router.put("/status/:id", userAuthCheck(['admin']), userController.blockUnblockUser);
+Router.delete("/delete/:id", userAuthCheck(['admin']), adminController.deleteAdmin);
 
 module.exports = Router;

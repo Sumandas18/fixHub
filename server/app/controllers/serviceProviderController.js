@@ -1,7 +1,8 @@
 const cloudinary = require("cloudinary");
 
 const StatusCode = require('../utils/statusCode');
-const serviceProviderValidation = require('../utils/validation/checkServiceProviderValidation');
+const createServiceProviderValidation = require('../utils/validation/create/checkCreateServiceProviderValidation');
+const updateServiceProviderValidation = require('../utils/validation/update/checkUpdateServiceProviderValidation');
 const serviceProviderModel = require('./../models/serviceProviderModel');
 
 class ServiceProviderController {
@@ -11,7 +12,7 @@ class ServiceProviderController {
             let profile_img, profile_img_url;
 
             const { service_id, service_area_zip, experience, charges_per_hour } = req.body;
-            const provider = req.provider;
+            const provider = req.user;
 
             if (!service_id || !service_area_zip || !experience || !charges_per_hour) {
                 return res.status(StatusCode.NOT_FOUND).json({
@@ -27,7 +28,7 @@ class ServiceProviderController {
                 });
             }
 
-            const { data, error } = serviceProviderValidation.validate({ service_area_zip, experience, charges_per_hour })
+            const { data, error } = createServiceProviderValidation.validate({ service_area_zip, experience, charges_per_hour })
             if (error) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
@@ -140,15 +141,6 @@ class ServiceProviderController {
 
             const serviceProviderId = req.params.serviceProviderId;
 
-            const { service_area_zip, experience, charges_per_hour } = req.body;
-
-            if (!service_area_zip || !experience || !charges_per_hour) {
-                return res.status(StatusCode.NOT_FOUND).json({
-                    success: false,
-                    message: "All required fields must be filled"
-                });
-            }
-
             if (!serviceProviderId) {
                 return res.status(StatusCode.NOT_FOUND).json({
                     success: false,
@@ -156,7 +148,7 @@ class ServiceProviderController {
                 });
             }
 
-            const { data, error } = serviceProviderValidation.validate({ service_area_zip, experience, charges_per_hour })
+            const { data, error } = updateServiceProviderValidation.validate(req.body);
             if (error) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
@@ -192,20 +184,22 @@ class ServiceProviderController {
         }
     }
 
-    async updateServiceProviderStatusAndAvailability(req, res) {
+    async updateServiceProviderAvailability(req, res) {
         try {
             const serviceProviderId = req.params.serviceProviderId;
 
-            const isActive = req.body.isActive;
-
             if (!serviceProviderId) {
-                return res.status(StatusCode.NOT_FOUND).json({
+                res.status(StatusCode.NOT_FOUND).json({
                     success: false,
-                    message: "Service-provider ID not available"
+                    message: 'Service provider ID not available'
                 });
             }
 
-            const updateStatus = await serviceProviderModel.findByIdAndUpdate(serviceProviderId, req.body, { new: true });
+            const serviceProvider = await serviceProviderModel.findById(serviceProviderId);
+
+            serviceProvider.isAvailable = !serviceProvider.isAvailable;
+
+            serviceProvider.save();
 
             return res.status(StatusCode.SUCCESS).json({
                 success: true,
@@ -282,4 +276,4 @@ class ServiceProviderController {
     }
 }
 
-model.exports = new ServiceProviderController();
+module.exports = new ServiceProviderController();

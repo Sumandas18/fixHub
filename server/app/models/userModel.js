@@ -68,9 +68,16 @@ const userSchema = new Schema(
             type: Boolean,
             default: false
         },
+        isAvailable: {
+            type: Boolean,
+            default: false
+        },
         isBlocked: {
             type: Boolean,
             default: false
+        },
+        lastLogin: {
+            type: Date
         },
         createdAt: {
             type: Date,

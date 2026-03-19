@@ -1,6 +1,5 @@
 const StatusCode = require("../utils/statusCode");
 const bookingModel = require("../models/serviceBookingModel");
-const serviceProviderModel = require("../models/serviceProviderModel");
 
 class BookingController {
 
@@ -15,12 +14,28 @@ class BookingController {
         });
       }
 
-      const booking = await bookingModel.create({
+      const existingBooking = await bookingModel.findOne({
+        service_provider_id,
+        scheduled_date: new Date(scheduled_date),
+        scheduled_time,
+        status: { $in: ["pending", "confirmed"] }
+      });
+
+      if (existingBooking) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          success: false,
+          message: "Service provider is already booked for this date and time",
+        });
+      }
+
+      const bookingObj = new bookingModel({
         customer_id: req.user._id,
         service_provider_id,
         scheduled_date,
-        scheduled_time,
+        scheduled_time
       });
+
+      const booking = await bookingObj.save();
 
       return res.status(StatusCode.CREATED).json({
         success: true,
@@ -36,16 +51,70 @@ class BookingController {
     }
   }
 
-  async getMyBookings(req, res) {
+  async getAllBookings(req, res) {
     try {
-      const bookings = await bookingModel.find({
-        customer_id: req.user._id,
-      })
+      const bookings = await bookingModel.find()
+        .populate("customer_id").populate("service_provider_id");
+
+      return res.status(StatusCode.SUCCESS).json({
+        success: true,
+        message: "All available bookings",
+        data: bookings
+      });
+
+    }
+    catch (error) {
+      return res.status(StatusCode.SERVER_ERROR).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  async getProviderBookings(req, res) {
+    try {
+      const provider_id = req.user._id;
+
+      if (!provider_id) {
+        return res.status(StatusCode.FORBIDDEN).json({
+          success: false,
+          message: "Unauthorised access"
+        })
+      }
+      const bookings = await bookingModel.find({ provider_id })
+        .populate("customer_id");
+
+      return res.status(StatusCode.SUCCESS).json({
+        success: true,
+        message: "Available bookings of a specific provider",
+        data: bookings
+      });
+
+    } catch (error) {
+      return res.status(StatusCode.SERVER_ERROR).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  async getCustomerBookings(req, res) {
+    try {
+      const customer_id = req.user._id;
+
+      if (!customer_id) {
+        return res.status(StatusCode.FORBIDDEN).json({
+          success: false,
+          message: "Unauthorised access"
+        })
+      }
+      const bookings = await bookingModel.find({ customer_id })
         .populate("service_provider_id");
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,
-        data: bookings,
+        message: "Available bookings of a specific customer",
+        data: bookings
       });
 
     } catch (error) {
@@ -58,7 +127,16 @@ class BookingController {
 
   async cancelBooking(req, res) {
     try {
-      const booking = await bookingModel.findById(req.params.id);
+      const booking_id = req.params.id;
+
+      if (!booking_id) {
+        return res.status(StatusCode.NOT_FOUND).json({
+          success: false,
+          message: "Booking ID not available"
+        })
+      }
+
+      const booking = await bookingModel.findById(booking_id);
 
       if (!booking) {
         return res.status(StatusCode.NOT_FOUND).json({
@@ -70,18 +148,24 @@ class BookingController {
       if (booking.customer_id.toString() !== req.user._id.toString()) {
         return res.status(StatusCode.FORBIDDEN).json({
           success: false,
-          message: "Unauthorized",
+          message: "Unauthorized access",
         });
       }
+      else if (booking.status !== 'pending' && req.user.user_role === 'provider') {
+        return res.status(StatusCode.FORBIDDEN).json({
+          success: false,
+          message: "Unauthorized access",
+        });
+      }
+      else {
+        booking.status = "cancelled";
+        await booking.save();
 
-      booking.status = "cancelled";
-      await booking.save();
-
-      return res.status(StatusCode.SUCCESS).json({
-        success: true,
-        message: "Booking cancelled",
-      });
-
+        return res.status(StatusCode.SUCCESS).json({
+          success: true,
+          message: "Booking cancelled",
+        });
+      }
     } catch (error) {
       return res.status(StatusCode.SERVER_ERROR).json({
         success: false,
@@ -93,8 +177,9 @@ class BookingController {
   async updateBookingStatus(req, res) {
     try {
       const { status } = req.body;
+      const booking_id = req.params.id;
 
-      const booking = await bookingModel.findById(req.params.id);
+      const booking = await bookingModel.findById(booking_id);
 
       if (!booking) {
         return res.status(StatusCode.NOT_FOUND).json({
@@ -119,6 +204,7 @@ class BookingController {
       });
     }
   }
+
 }
 
 module.exports = new BookingController();
