@@ -1,12 +1,13 @@
 const express = require("express");
 
 const ratingController = require("../controllers/RatingController");
-const authCheck = require("../middleware/authCheck");
+const userAuthCheck = require("../middleware/userAuthCheck");
+
 
 const Router = express.Router();
 
 // Customer
-Router.post("/", authCheck, ratingController.giveRating);
+Router.post("/", userAuthCheck(['customer']), ratingController.giveRating);
 
 // Public / Provider
 Router.get("/:providerId", ratingController.getRatingsByProvider);

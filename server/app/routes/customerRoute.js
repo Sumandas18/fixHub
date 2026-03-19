@@ -1,7 +1,8 @@
 const express = require("express");
 
 const customerController = require("../controllers/customerController");
-const authCheck = require("../middleware/authCheck");
+const userAuthCheck = require("../middleware/userAuthCheck");
+
 
 const Router = express.Router();
 
@@ -10,9 +11,9 @@ Router.post("/register", customerController.customerRegister);
 Router.post("/login", customerController.customerLogin);
 
 // Profile
-Router.get("/", authCheck, customerController.getCustomer);
-Router.get("/:id", authCheck, customerController.getCustomerById);
-Router.put("/:id", authCheck, customerController.updateCustomer);
-Router.delete("/:id", authCheck, customerController.deleteCustomer);
+Router.get("/", userAuthCheck(['customer']), customerController.getCustomer);
+Router.get("/:id", userAuthCheck(['customer']), customerController.getCustomerById);
+Router.put("/:id", userAuthCheck(['customer']), customerController.updateCustomer);
+Router.delete("/:id", userAuthCheck(['customer']), customerController.deleteCustomer);
 
 module.exports = Router;

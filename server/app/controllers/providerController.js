@@ -82,30 +82,37 @@ class ProviderController {
         });
       }
 
+
       const isMatch = await bcrypt.compare(user_password, user.user_password);
-
-      if (!isMatch) {
-        return res.status(StatusCode.BAD_REQUEST).json({
-          success: false,
-          message: "Invalid password",
-        });
-      }
-
-      const token = jwt.sign(
-        {
-          _id: user._id,
-          user_role: user.user_role,
-        },
-        process.env.JWT_SECRET_KEY,
-        { expiresIn: "1h" }
-      );
-
-      return res.status(StatusCode.SUCCESS).json({
-        success: true,
-        message: "Login successful",
-        data: user,
-        token,
-      });
+                if (!verifyPassword) {
+                    return res.status(StatusCode.BAD_REQUEST).json({
+                        success: false,
+                        message: "Invalid password"
+                    });
+                }
+                else {
+                    const token = jwt.sign({
+                        user_id: existProvider._id,
+                        user_name: existProvider.user_name,
+                        user_email: existProvider.user_email,
+                        user_role: existProvider.user_role,
+                        user_address: existProvider.user_address,
+                        user_contact: existProvider.user_contact
+                    }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+                    return res.status(StatusCode.SUCCESS).json({
+                        success: true,
+                        message: "Login successful",
+                        data:{
+                             user_id: existProvider._id,
+                        user_name: existProvider.user_name,
+                        user_email: existProvider.user_email,
+                        user_role: existProvider.user_role,
+                        user_address: existProvider.user_address,
+                        user_contact: existProvider.user_contact
+                        },
+                        token
+                    });
+                }
 
     } catch (error) {
       return res.status(StatusCode.SERVER_ERROR).json({
