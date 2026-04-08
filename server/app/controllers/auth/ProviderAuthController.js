@@ -3,13 +3,16 @@ const jwt = require("jsonwebtoken");
 
 const StatusCode = require("../../utils/statusCode");
 const userModel = require("../../models/userModel");
+const otpModel = require("../../models/otpModel");
+
 const checkProviderValidate = require("../../utils/validation/create/checkCreateProviderValidation");
+const sendOTPMails = require("../../utils/sendMail");
 
 class ProviderAuthController {
 
     async providerRegister(req, res) {
         try {
-            const { user_name, user_email, user_password, user_contact, user_role, user_address } = req.body;
+            const { user_name, user_email, user_password, user_contact, user_address } = req.body;
 
             if (!user_name || !user_email || !user_password) {
                 return res.status(StatusCode.BAD_REQUEST).json({
@@ -36,21 +39,28 @@ class ProviderAuthController {
                 });
             }
 
-            const hashedPassword = await bcrypt.hash(user_password, 10);
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = bcrypt.hashSync(user_password, salt);
+            const otp = Math.floor(1000 + Math.random() * 9000);
 
             const provider = await userModel.create({
                 user_name,
                 user_email,
                 user_password: hashedPassword,
                 user_contact,
-                user_role,
+                user_role: "provider",
                 doc_url: req.file ? req.file.path : null,
                 user_address,
             });
 
+            const otpObj = new otpModel({ userId: provider._id, otp });
+            await otpObj.save();
+
+            await sendOTPMails({ user: provider, type: "newRegister", otp });
+
             return res.status(StatusCode.CREATED).json({
                 success: true,
-                message: "Provider registered successfully",
+                message: "Provider registered successfully. Please verify your email",
                 data: provider,
             });
 

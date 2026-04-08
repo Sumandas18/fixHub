@@ -11,8 +11,11 @@ Router.get("/", userAuthCheck(['admin']), bookingController.getAllBookings);
 Router.get("/provider", userAuthCheck(['provider']), bookingController.getProviderBookings);
 Router.get("/customer", userAuthCheck(['customer']), bookingController.getCustomerBookings);
 
-Router.put("/cancel/:id", userAuthCheck(['provider','customer']), bookingController.cancelBooking);
+Router.put("/cancel/:id", userAuthCheck(['provider', 'customer']), bookingController.cancelBooking);
 
 Router.put("/status/:id", userAuthCheck(['provider']), bookingController.updateBookingStatus);
+
+Router.put("/resend-otp", userAuthCheck(['provider']), bookingController.resendBookingOTP);
+Router.put("/verify-otp", userAuthCheck(['provider']), bookingController.verifyBookingOTP);
 
 module.exports = Router;

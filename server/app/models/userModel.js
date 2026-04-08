@@ -64,6 +64,10 @@ const userSchema = new Schema(
         doc_url: {
             type: String
         },
+        isVerified: {
+            type: Boolean,
+            default: false
+        },
         isApproved: {
             type: Boolean,
             default: false

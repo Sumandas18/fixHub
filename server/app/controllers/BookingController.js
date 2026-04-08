@@ -1,5 +1,7 @@
 const StatusCode = require("../utils/statusCode");
 const bookingModel = require("../models/serviceBookingModel");
+const serviceOTPModel = require("../models/serviceOtp");
+const sendOTPMails = require("../utils/sendMail");
 
 class BookingController {
 
@@ -36,6 +38,8 @@ class BookingController {
       });
 
       const booking = await bookingObj.save();
+
+      await sendOTPMails({ user, booking, type: "newBooking" });
 
       return res.status(StatusCode.CREATED).json({
         success: true,
@@ -161,6 +165,8 @@ class BookingController {
         booking.status = "cancelled";
         await booking.save();
 
+        await sendOTPMails({ user, booking, type: "cancelBooking" });
+
         return res.status(StatusCode.SUCCESS).json({
           success: true,
           message: "Booking cancelled",
@@ -176,9 +182,15 @@ class BookingController {
 
   async updateBookingStatus(req, res) {
     try {
-      const { status } = req.body;
+      const { status, reason } = req.body;
       const booking_id = req.params.id;
 
+      if (!status) {
+        return res.status(StatusCode.BAD_GATEWAY).json({
+          success: false,
+          message: "Status not available",
+        });
+      }
       const booking = await bookingModel.findById(booking_id);
 
       if (!booking) {
@@ -188,16 +200,146 @@ class BookingController {
         });
       }
 
-      booking.status = status;
-      await booking.save();
+      if (status == "completed") {
+        const otp = Math.floor(1000 + Math.random() * 9000);
 
-      return res.status(StatusCode.SUCCESS).json({
-        success: true,
-        message: "Booking status updated",
-        data: booking,
-      });
+        const otpObj = new serviceOTPModel({ bookingId: booking._id, otp });
+        await otpObj.save();
+
+        await sendOTPMails({ user, booking, otp, type: "taskComplete" });
+
+        return res.status(StatusCode.SUCCESS).json({
+          success: true,
+          message: `OTP has been sent successfully`
+        });
+
+      }
+      else {
+        booking.status = status;
+        await booking.save();
+
+        if (status == "cancelled") {
+          await sendOTPMails({ user, booking, reason, type: "cancelBooking" });
+        }
+        if (status == "confirmed") {
+          await sendOTPMails({ user, booking, type: "confirmBooking" });
+        }
+
+        return res.status(StatusCode.SUCCESS).json({
+          success: true,
+          message: `Booking is ${status == "cancelled" ? 'cancelled' : 'confirmed'} successfully`,
+          data: booking
+        });
+      }
 
     } catch (error) {
+      return res.status(StatusCode.SERVER_ERROR).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  async verifyBookingOTP(req, res) {
+    try {
+      const { otp, bookingId } = req.body;
+
+      if (!otp || !bookingId) {
+        return res.status(StatusCode.BAD_GATEWAY).json({
+          success: false,
+          message: "All fields are required",
+        });
+      }
+      const booking = await bookingModel.findById(bookingId);
+
+      if (!booking) {
+        return res.status(StatusCode.NOT_FOUND).json({
+          success: false,
+          message: "Booking not found",
+        });
+      }
+
+      if (booking.status == "completed") {
+        return res.status(StatusCode.BAD_GATEWAY).json({
+          success: false,
+          message: "Service already completed",
+        });
+      }
+      else {
+
+        const checkOTP = await serviceOTPModel.findOne({ bookingId, otp });
+
+        if (!checkOTP) {
+          return res.status(StatusCode.BAD_GATEWAY).json({
+            success: false,
+            message: "Invalid OTP",
+          });
+        }
+        else {
+
+          booking.status = "completed";
+          await booking.save();
+
+          await serviceOTPModel.deleteMany({ bookingId });
+
+          return res.status(StatusCode.SUCCESS).json({
+            success: true,
+            message: `Service completed successfully`
+          });
+
+        }
+      }
+    }
+    catch (error) {
+      return res.status(StatusCode.SERVER_ERROR).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  async resendBookingOTP(req, res) {
+    try {
+
+      const { bookingId } = req.body;
+
+      if (!otp || !bookingId) {
+        return res.status(StatusCode.BAD_GATEWAY).json({
+          success: false,
+          message: "All fields are required",
+        });
+      }
+      const booking = await bookingModel.findById(bookingId);
+
+      if (!booking) {
+        return res.status(StatusCode.NOT_FOUND).json({
+          success: false,
+          message: "Booking not found",
+        });
+      }
+
+      if (booking.status == "completed") {
+        return res.status(StatusCode.BAD_GATEWAY).json({
+          success: false,
+          message: "Service already completed",
+        });
+      }
+      else {
+
+        const otp = Math.floor(1000 + Math.random() * 9000);
+
+        const otpObj = new serviceOTPModel({ bookingId: booking._id, otp });
+        await otpObj.save();
+
+        await sendOTPMails({ user, booking, otp, type: "resendBookingOTP" });
+
+        return res.status(StatusCode.SUCCESS).json({
+          success: true,
+          message: "OTP re-send successfully",
+        });
+      }
+    }
+    catch (error) {
       return res.status(StatusCode.SERVER_ERROR).json({
         success: false,
         message: error.message,

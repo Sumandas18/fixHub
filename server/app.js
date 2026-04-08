@@ -7,7 +7,7 @@ const cors = require('cors');
 
 const app = express();
 
-const port = 4000;
+const port = process.env.PORT || 4000;
 
 app.use(
   cors({
@@ -18,19 +18,16 @@ app.use(
 );
 // app.use(rateLimiter);
 
-app.use(express.json());
 dbConnection();
 
 app.use(express.json());
 
 app.use(mainRoute);
 
-// app.use(express.urlencoded({extended:true}))
-
 app.listen(port, (error) => {
-    if (error) {
-        console.log('Unable to run the server');
-    } else {
-        console.log(`Server is running on this port: ${port}`)
-    }
+  if (error) {
+    console.log('Unable to run the server');
+  } else {
+    console.log(`Server is running on this port: ${port}`)
+  }
 });

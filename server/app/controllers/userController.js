@@ -1,44 +1,162 @@
 const bcrypt = require("bcryptjs");
 
 const userModel = require("../models/userModel");
+const otpModel = require("../models/otpModel");
+
 const StatusCode = require("../utils/statusCode");
 const passwordValidation = require("./../utils/validation/checkPasswordValidation");
+const sendOTPMails = require("../utils/sendMail");
 
 class UserController {
 
-    async blockUnblockUser(req, res) {
+    async resendOTP(req, res) {
         try {
-            const adminId = req.params.id;
+            const { email } = req.body;
 
-            if (!adminId) {
-                return res.status(StatusCode.NOT_FOUND).json({
+            if (!email) {
+                return res.status(StatusCode.BAD_GATEWAY).json({
                     success: false,
-                    message: "Admin ID is required"
+                    message: "All fields are required"
                 })
             }
 
-            const admin = await userModel.findById(adminId);
+            const user = await userModel.findOne({ email });
 
-            if (!admin) {
-                return res.status(StatusCode.NOT_FOUND).json({
+            if (!user) {
+                return res.status(StatusCode.BAD_GATEWAY).json({
                     success: false,
-                    message: "Admin not found"
+                    message: "Invalid email"
+                })
+            }
+            else {
+                if (user.isVerified) {
+                    return res.status(StatusCode.BAD_GATEWAY).json({
+                        success: false,
+                        message: "User already verified"
+                    })
+                }
+                else {
+                    const otp = Math.floor(1000 + Math.random() * 9000);
+
+                    const otpObj = new otpModel({ userId: user._id, otp });
+                    await otpObj.save();
+
+                    await sendOTPMails({ user, otp, type:"resendOTP" });
+
+                    return res.status(StatusCode.SUCCESS).json({
+                        success: success,
+                        message: "OTP re-send successfully"
+                    })
+                }
+            }
+
+        }
+        catch (err) {
+            return res.status(StatusCode.SERVER_ERROR).json({
+                success: false,
+                message: err.message
+            })
+        }
+    }
+
+    async verifyOTP(req, res) {
+        try {
+            const { email, otp } = req.body;
+
+            if (!email || !otp) {
+                return res.status(StatusCode.BAD_GATEWAY).json({
+                    success: false,
+                    message: "All fields are required"
+                })
+            }
+
+            const user = await userModel.findOne({ email });
+
+            if (!user) {
+                return res.status(StatusCode.BAD_GATEWAY).json({
+                    success: false,
+                    message: "Invalid email"
+                })
+            }
+            else {
+                if (user.isVerified) {
+                    return res.status(StatusCode.BAD_GATEWAY).json({
+                        success: false,
+                        message: "User already verified"
+                    })
+                }
+                else {
+                    const checkOTP = await otpModel.findOne({ userId: user._id, otp });
+
+                    if (!checkOTP) {
+                        return res.status(StatusCode.BAD_GATEWAY).json({
+                            success: false,
+                            message: "Invalid OTP"
+                        })
+                    }
+                    else {
+                        user.isVerified = true;
+                        await user.save();
+
+                        await otpModel.deleteMany({ userId: user._id });
+
+                        return res.status(StatusCode.SUCCESS).json({
+                            success: true,
+                            message: "Email verification successful"
+                        })
+                    }
+                }
+            }
+        }
+        catch (err) {
+            return res.status(StatusCode.SERVER_ERROR).json({
+                success: false,
+                message: err.message
+            })
+        }
+    }
+
+    async blockUnblockUser(req, res) {
+        try {
+            const userId = req.params.id;
+            const authRole = req.user.user_role;
+
+            if (!authRole) {
+                return res.status(StatusCode.FORBIDDEN).json({
+                    success: false,
+                    message: "Unauthorised access"
                 });
             }
 
-            if (admin.user_role !== 'admin') {
+            if (!userId) {
+                return res.status(StatusCode.NOT_FOUND).json({
+                    success: false,
+                    message: "ID is required"
+                })
+            }
+
+            const user = await userModel.findById(userId);
+
+            if (!user) {
+                return res.status(StatusCode.NOT_FOUND).json({
+                    success: false,
+                    message: "User not found"
+                });
+            }
+
+            if (authRole !== 'admin') {
                 return res.status(StatusCode.FORBIDDEN).json({
                     success: false,
                     message: "Unauthenticated"
                 });
             }
 
-            admin.isBlocked = !admin.isBlocked;
-            await admin.save();
+            user.isBlocked = !user.isBlocked;
+            await user.save();
 
             return res.status(StatusCode.SUCCESS).json({
                 success: true,
-                message: `User ${admin.isBlocked ? "blocked" : "unblocked"}`
+                message: `User ${user.isBlocked ? "blocked" : "unblocked"}`
             });
 
         }
@@ -112,6 +230,7 @@ class UserController {
     async fetchProfile(req, res) {
         try {
             const user = req.user;
+
             if (!user) {
                 return res.status(StatusCode.FORBIDDEN).json({
                     success: false,

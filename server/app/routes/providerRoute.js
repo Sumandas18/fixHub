@@ -11,6 +11,7 @@ const Router = express.Router();
 // Auth
 Router.post("/register", Upload.single("document"), ProviderAuthController.providerRegister);
 Router.post("/login", ProviderAuthController.providerLogin);
+Router.post("/verify", userController.verifyOTP);
 
 // All 
 Router.get("/", userAuthCheck(['admin']), providerController.getAllProvider);

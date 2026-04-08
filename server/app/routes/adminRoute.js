@@ -12,6 +12,7 @@ const Router = express.Router();
 // Auth
 Router.post("/register", AdminAuthController.adminRegister);
 Router.post("/login", AdminAuthController.adminLogin);
+Router.post("/verify", userController.verifyOTP);
 
 // Profile 
 Router.get("/profile", userAuthCheck(['admin']), userController.fetchProfile);
