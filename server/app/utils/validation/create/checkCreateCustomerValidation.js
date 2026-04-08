@@ -37,6 +37,8 @@ const checkCustomerCustomerValidate = JOI.object({
             "string.pattern.base": "Contact must be a 10-digit number"
         }),
 
+    user_role: JOI.string().valid("customer").default("customer"),
+
     user_address: addressSchema.required()
 });
 

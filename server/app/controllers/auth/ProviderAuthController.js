@@ -77,7 +77,7 @@ class ProviderAuthController {
 
 
             const isMatch = await bcrypt.compare(user_password, user.user_password);
-            if (!verifyPassword) {
+            if (!isMatch) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
                     message: "Invalid password"
@@ -85,27 +85,27 @@ class ProviderAuthController {
             }
             else {
                 const token = jwt.sign({
-                    user_id: existProvider._id,
-                    user_name: existProvider.user_name,
-                    user_email: existProvider.user_email,
-                    user_role: existProvider.user_role,
-                    user_address: existProvider.user_address,
-                    user_contact: existProvider.user_contact
+                    user_id: user._id,
+                    user_name: user.user_name,
+                    user_email: user.user_email,
+                    user_role: user.user_role,
+                    user_address: user.user_address,
+                    user_contact: user.user_contact
                 }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
 
-                existProvider.lastLogin = Date.now();
-                await existProvider.save();
+                user.lastLogin = Date.now();
+                await user.save();
 
                 return res.status(StatusCode.SUCCESS).json({
                     success: true,
                     message: "Login successful",
                     data: {
-                        user_id: existProvider._id,
-                        user_name: existProvider.user_name,
-                        user_email: existProvider.user_email,
-                        user_role: existProvider.user_role,
-                        user_address: existProvider.user_address,
-                        user_contact: existProvider.user_contact
+                        user_id: user._id,
+                        user_name: user.user_name,
+                        user_email: user.user_email,
+                        user_role: user.user_role,
+                        user_address: user.user_address,
+                        user_contact: user.user_contact
                     },
                     token
                 });

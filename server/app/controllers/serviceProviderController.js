@@ -199,7 +199,7 @@ class ServiceProviderController {
 
             serviceProvider.isAvailable = !serviceProvider.isAvailable;
 
-            serviceProvider.save();
+            await serviceProvider.save();
 
             return res.status(StatusCode.SUCCESS).json({
                 success: true,

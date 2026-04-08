@@ -68,7 +68,7 @@ class ProviderController {
         });
       }
 
-      const { data, error } = checkUpdateProviderValidate.validate(req, body);
+      const { data, error } = checkUpdateProviderValidate.validate(req.body);
 
       if (error) {
         return res.status(StatusCode.BAD_REQUEST).json({
@@ -114,7 +114,7 @@ class ProviderController {
         });
       }
 
-      await userModel.findByIdAndUpdate(providerId);
+      await userModel.findByIdAndDelete(providerId);
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,

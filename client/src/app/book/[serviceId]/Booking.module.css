@@ -1,0 +1,84 @@
+.bookingBox {
+  max-width: 600px;
+  margin: 0 auto;
+  background-color: var(--color-dark-gray);
+  padding: 40px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inputGroup label {
+  color: var(--color-white);
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.inputGroup input,
+.inputGroup select,
+.inputGroup textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--color-white);
+  font-family: inherit;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.inputGroup input:focus,
+.inputGroup select:focus,
+.inputGroup textarea:focus {
+  outline: none;
+  border-color: var(--color-orange);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.inputGroup select option {
+  background-color: var(--color-dark-gray);
+  color: var(--color-white);
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 15px;
+  border-radius: 8px;
+  background-color: var(--color-blue);
+  color: var(--color-white);
+  font-weight: 600;
+  font-size: 1.1rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background-color: var(--color-blue-hover);
+  transform: translateY(-2px);
+}
+
+.submitBtn:disabled {
+  background-color: var(--color-gray);
+  cursor: not-allowed;
+}
+
+.errorText {
+  color: #ef4444;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-top: 0.5rem;
+}

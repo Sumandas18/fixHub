@@ -33,7 +33,7 @@ class CustomerController {
           message: "Customer ID is required"
         })
       }
-      const customer = await userModel.findById();
+      const customer = await userModel.findById(customerId);
 
       if (!customer) {
         return res.status(StatusCode.NOT_FOUND).json({

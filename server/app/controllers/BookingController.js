@@ -29,7 +29,7 @@ class BookingController {
       }
 
       const bookingObj = new bookingModel({
-        customer_id: req.user._id,
+        customer_id: req.user.user_id,
         service_provider_id,
         scheduled_date,
         scheduled_time
@@ -73,7 +73,7 @@ class BookingController {
 
   async getProviderBookings(req, res) {
     try {
-      const provider_id = req.user._id;
+      const provider_id = req.user.user_id;
 
       if (!provider_id) {
         return res.status(StatusCode.FORBIDDEN).json({
@@ -100,7 +100,7 @@ class BookingController {
 
   async getCustomerBookings(req, res) {
     try {
-      const customer_id = req.user._id;
+      const customer_id = req.user.user_id;
 
       if (!customer_id) {
         return res.status(StatusCode.FORBIDDEN).json({
@@ -145,7 +145,7 @@ class BookingController {
         });
       }
 
-      if (booking.customer_id.toString() !== req.user._id.toString()) {
+      if (booking.customer_id.toString() !== req.user.user_id.toString()) {
         return res.status(StatusCode.FORBIDDEN).json({
           success: false,
           message: "Unauthorized access",

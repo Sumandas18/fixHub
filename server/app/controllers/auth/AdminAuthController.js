@@ -28,7 +28,7 @@ class AdminAuthController {
                 });
             }
 
-            const existAdmin = await userModel.find({ user_email });
+            const existAdmin = await userModel.findOne({ user_email });
             if (existAdmin) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
@@ -68,7 +68,7 @@ class AdminAuthController {
                 });
             }
 
-            const existAdmin = await userModel.find({ user_email });
+            const existAdmin = await userModel.findOne({ user_email });
             if (!existAdmin) {
                 return res.status(StatusCode.NOT_FOUND).json({
                     success: false,
@@ -76,7 +76,7 @@ class AdminAuthController {
                 });
             }
             else {
-                const verifyPassword = await bcrypt.compare(existAdmin.user_password, user_password);
+                const verifyPassword = await bcrypt.compare(user_password, existAdmin.user_password);
 
                 if (!verifyPassword) {
                     return res.status(StatusCode.BAD_REQUEST).json({

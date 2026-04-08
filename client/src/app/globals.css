@@ -1,0 +1,55 @@
+:root {
+  /* Color Palette */
+  --color-orange: #eb5e28; /* Matt orange */
+  --color-orange-hover: #d2501e;
+  --color-blue: #1c4ed8;   /* Deep bright blue */
+  --color-blue-hover: #1e40af;
+  --color-white: #ffffff;
+  --color-offwhite: #f8fafc;
+  --color-black: #121212;
+  --color-dark-gray: #1e1e1e;
+  --color-gray: #475569;
+  --color-light-gray: #e2e8f0;
+  
+  /* Fonts */
+  --font-heading: 'Outfit', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background-color: var(--color-black);
+  color: var(--color-white);
+  font-family: var(--font-body);
+  scroll-behavior: smooth;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+/* Micro-animations and utility classes for typography */
+.gradient-text {
+  background: linear-gradient(90deg, var(--color-orange), var(--color-blue));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
