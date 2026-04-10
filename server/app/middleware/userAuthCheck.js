@@ -15,7 +15,7 @@ const userAuthCheck = (accessedRole = []) => {
             })
         }
         try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+            const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET_KEY);
 
             if (!accessedRole.includes(decoded.user_role)) {
                 return res.status(StatusCode.BAD_GATEWAY).json({
@@ -25,15 +25,29 @@ const userAuthCheck = (accessedRole = []) => {
             }
             else {
                 req.user = decoded;
+                next();
             }
 
         } catch (err) {
-            return res.status(StatusCode.BAD_GATEWAY).json({
+
+            if (err.name === "TokenExpiredError") {
+                return res.status(StatusCode.UNAUTHORIZED).json({
+                    status: false,
+                    message: "Token expired",
+                });
+            }
+
+            if (err.name === "JsonWebTokenError") {
+                return res.status(StatusCode.UNAUTHORIZED).json({
+                    status: false,
+                    message: "Invalid token",
+                });
+            }
+            return res.status(StatusCode.UNAUTHORIZED).json({
                 status: false,
-                message: "invalid token"
+                message: "Authentication failed"
             })
         }
-        return next();
 
     }
 }

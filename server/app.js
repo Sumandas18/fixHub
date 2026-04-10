@@ -3,7 +3,9 @@ const express = require('express');
 const rateLimiter = require('./app/utils/limiter');
 const dbConnection = require("./app/config/dbConfig")
 const mainRoute = require("./app/routes/indexRoute");
+
 const cors = require('cors');
+const cookieParser = require("cookie-parser");
 
 const app = express();
 
@@ -19,6 +21,8 @@ app.use(
 // app.use(rateLimiter);
 
 dbConnection();
+
+app.use(cookieParser());
 
 app.use(express.json());
 

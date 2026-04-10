@@ -5,9 +5,11 @@ const StatusCode = require("../../utils/statusCode");
 const userModel = require("../../models/userModel");
 const serviceProviderModel = require("../../models/serviceProviderModel");
 const otpModel = require("../../models/otpModel");
+const tokenModel = require("../../models/tokenModel");
 
 const checkProviderValidate = require("../../utils/validation/create/checkCreateProviderValidation");
 const sendOTPMails = require("../../utils/sendMail");
+const generateOTP = require("../../helper/generateOTP");
 
 class ProviderAuthController {
 
@@ -42,7 +44,7 @@ class ProviderAuthController {
 
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = bcrypt.hashSync(user_password, salt);
-            const otp = Math.floor(1000 + Math.random() * 9000);
+            const otp = generateOTP();
 
             const provider = await userModel.create({
                 user_name,
@@ -115,17 +117,42 @@ class ProviderAuthController {
                         });
                     }
                     else {
-                        const token = jwt.sign({
+                        const access_token = jwt.sign({
                             user_id: user._id,
                             user_name: user.user_name,
                             user_email: user.user_email,
                             user_role: user.user_role,
                             user_address: user.user_address,
                             user_contact: user.user_contact
-                        }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+                        }, process.env.ACCESS_TOKEN_SECRET_KEY, { expiresIn: '1h' });
+
+                        const refresh_token = jwt.sign({
+                            user_id: user._id,
+                            user_name: user.user_name,
+                            user_email: user.user_email,
+                            user_role: user.user_role,
+                            user_address: user.user_address,
+                            user_contact: user.user_contact
+                        }, process.env.REFRESH_TOKEN_SECRET_KEY, { expiresIn: '7d' });
+
+                        const hashedToken = await bcrypt.hash(refresh_token, 10);
 
                         user.lastLogin = Date.now();
                         await user.save();
+
+                        const tokenObj = new tokenModel({
+                            userId: user._id,
+                            token: hashedToken
+                        });
+
+                        await tokenObj.save();
+
+                        res.cookie("refresh_token", refresh_token, {
+                            httpOnly: true,
+                            secure: process.env.NODE_ENV === "production",
+                            sameSite: "strict",
+                            maxAge: 7 * 24 * 60 * 60 * 1000,
+                        });
 
                         return res.status(StatusCode.SUCCESS).json({
                             success: true,
@@ -139,7 +166,7 @@ class ProviderAuthController {
                                 user_contact: user.user_contact,
                                 providerDetails
                             },
-                            token
+                            access_token, refresh_token
                         });
                     }
                 }

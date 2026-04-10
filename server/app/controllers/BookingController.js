@@ -2,6 +2,7 @@ const StatusCode = require("../utils/statusCode");
 const bookingModel = require("../models/serviceBookingModel");
 const serviceOTPModel = require("../models/serviceOtp");
 const sendOTPMails = require("../utils/sendMail");
+const generateOTP = require("../helper/generateOTP");
 
 class BookingController {
 
@@ -201,7 +202,7 @@ class BookingController {
       }
 
       if (status == "completed") {
-        const otp = Math.floor(1000 + Math.random() * 9000);
+        const otp = generateOTP();
 
         const otpObj = new serviceOTPModel({ bookingId: booking._id, otp });
         await otpObj.save();
@@ -326,7 +327,7 @@ class BookingController {
       }
       else {
 
-        const otp = Math.floor(1000 + Math.random() * 9000);
+        const otp = generateOTP();
 
         const otpObj = new serviceOTPModel({ bookingId: booking._id, otp });
         await otpObj.save();

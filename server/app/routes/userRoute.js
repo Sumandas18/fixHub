@@ -7,6 +7,7 @@ const Router = express.Router();
 
 // Auth
 Router.post("/verify", userController.verifyOTP);
+Router.get("/logout", userController.userLogout);
 
 // Profile 
 Router.get("/profile", userAuthCheck(['admin', 'provider', 'customer']), userController.fetchProfile);

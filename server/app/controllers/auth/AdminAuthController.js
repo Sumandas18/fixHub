@@ -2,8 +2,10 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
 const StatusCode = require("../../utils/statusCode");
-const userModel = require("../../models/userModel");
+const adminModel = require("../../models/adminModel");
 const otpModel = require("../../models/otpModel");
+const tokenModel = require("../../models/tokenModel");
+
 const checkAdminValidate = require("../../utils/validation/create/checkCreateAdminValidation");
 const sendOTPMails = require("../../utils/sendMail");
 
@@ -29,7 +31,7 @@ class AdminAuthController {
                 });
             }
 
-            const existAdmin = await userModel.findOne({ user_email });
+            const existAdmin = await adminModel.findOne({ user_email });
             if (existAdmin) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
@@ -39,9 +41,9 @@ class AdminAuthController {
 
             const salt = await bcrypt.genSalt(10);
             const hashPassword = bcrypt.hashSync(user_password, salt);
-            const otp = Math.floor(1000 + Math.random() * 9000);
+            const otp = generateOTP();
 
-            const adminObj = new userModel({ user_name, user_email, user_password: hashPassword, user_role: "admin" });
+            const adminObj = new adminModel({ user_name, user_email, user_password: hashPassword, user_role: "admin" });
             const admin = await adminObj.save();
 
             const otpObj = new otpModel({ userId: admin._id, otp });
@@ -74,7 +76,7 @@ class AdminAuthController {
                 });
             }
 
-            const existAdmin = await userModel.findOne({ user_email });
+            const existAdmin = await adminModel.findOne({ user_email });
             if (!existAdmin || existAdmin.user_role != "admin") {
                 return res.status(StatusCode.NOT_FOUND).json({
                     success: false,
@@ -104,15 +106,38 @@ class AdminAuthController {
                         });
                     }
                     else {
-                        const token = jwt.sign({
+                        const access_token = jwt.sign({
                             user_id: existAdmin._id,
                             user_name: existAdmin.user_name,
                             user_email: existAdmin.user_email,
                             user_role: existAdmin.user_role
-                        }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+                        }, process.env.ACCESS_TOKEN_SECRET_KEY, { expiresIn: '1h' });
+
+                        const refresh_token = jwt.sign({
+                            user_id: existAdmin._id,
+                            user_name: existAdmin.user_name,
+                            user_email: existAdmin.user_email,
+                            user_role: existAdmin.user_role
+                        }, process.env.REFRESH_TOKEN_SECRET_KEY, { expiresIn: '7d' });
+
+                        const hashedToken = await bcrypt.hash(refresh_token, 10);
 
                         existAdmin.lastLogin = Date.now();
                         await existAdmin.save();
+
+                        const tokenObj = new tokenModel({
+                            userId: existAdmin._id,
+                            token: hashedToken
+                        });
+
+                        await tokenObj.save();
+
+                        res.cookie("refresh_token", refresh_token, {
+                            httpOnly: true,
+                            secure: process.env.NODE_ENV === "production",
+                            sameSite: "strict",
+                            maxAge: 7 * 24 * 60 * 60 * 1000,
+                        });
 
                         return res.status(StatusCode.SUCCESS).json({
                             success: true,
@@ -122,7 +147,7 @@ class AdminAuthController {
                                 user_email: existAdmin.user_email,
                                 user_role: existAdmin.user_role
                             },
-                            token
+                            access_token, refresh_token
                         });
                     }
                 }

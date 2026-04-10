@@ -4,8 +4,11 @@ const jwt = require("jsonwebtoken");
 const StatusCode = require("../../utils/statusCode");
 const userModel = require("../../models/userModel");
 const otpModel = require("../../models/otpModel");
+const tokenModel = require("../../models/tokenModel");
+
 const checkCustomerValidate = require("../../utils/validation/create/checkCreateCustomerValidation");
 const sendOTPMails = require("../../utils/sendMail");
+const generateOTP = require("../../helper/generateOTP");
 
 class CustomerAuthController {
 
@@ -41,7 +44,7 @@ class CustomerAuthController {
 
             const salt = await bcrypt.genSalt(10);
             const hashPassword = bcrypt.hashSync(user_password, salt);
-            const otp = Math.floor(1000 + Math.random() * 9000);
+            const otp = generateOTP();
 
             const customer = await userModel.create({
                 user_name, user_email, user_password: hashPassword, user_contact, user_role: "customer", user_address
@@ -108,17 +111,42 @@ class CustomerAuthController {
                         });
                     }
 
-                    const token = jwt.sign({
+                    const access_token = jwt.sign({
                         user_id: existCustomer._id,
                         user_role: existCustomer.user_role,
                         user_email: existCustomer.user_email,
                         user_name: existCustomer.user_name
                     },
-                        process.env.JWT_SECRET_KEY, { expiresIn: "1h" }
+                        process.env.ACCESS_TOKEN_SECRET_KEY, { expiresIn: "1h" }
                     );
+
+                    const refresh_token = jwt.sign({
+                        user_id: existCustomer._id,
+                        user_role: existCustomer.user_role,
+                        user_email: existCustomer.user_email,
+                        user_name: existCustomer.user_name
+                    },
+                        process.env.REFRESH_TOKEN_SECRET_KEY, { expiresIn: "7d" }
+                    );
+
+                    const hashedToken = await bcrypt.hash(refresh_token, 10);
 
                     existCustomer.lastLogin = Date.now();
                     await existCustomer.save();
+
+                    const tokenObj = new tokenModel({
+                        userId: existCustomer._id,
+                        token: hashedToken
+                    });
+
+                    await tokenObj.save();
+
+                    res.cookie("refresh_token", refresh_token, {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === "production",
+                        sameSite: "strict",
+                        maxAge: 7 * 24 * 60 * 60 * 1000,
+                    });
 
                     return res.status(StatusCode.SUCCESS).json({
                         success: true,
@@ -131,7 +159,7 @@ class CustomerAuthController {
                             user_address: existCustomer.user_address,
                             user_contact: existCustomer.user_contact
                         },
-                        token
+                        access_token, refresh_token
                     });
                 }
             }

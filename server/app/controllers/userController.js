@@ -1,11 +1,14 @@
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const userModel = require("../models/userModel");
 const otpModel = require("../models/otpModel");
+const tokenModel = require("../models/tokenModel");
 
 const StatusCode = require("../utils/statusCode");
 const passwordValidation = require("./../utils/validation/checkPasswordValidation");
 const sendOTPMails = require("../utils/sendMail");
+const generateOTP = require("../helper/generateOTP");
 
 class UserController {
 
@@ -36,7 +39,7 @@ class UserController {
                     })
                 }
                 else {
-                    const otp = Math.floor(1000 + Math.random() * 9000);
+                    const otp = generateOTP();
 
                     const otpObj = new otpModel({ userId: user._id, otp });
                     await otpObj.save();
@@ -250,6 +253,60 @@ class UserController {
             return res.status(StatusCode.SERVER_ERROR).json({
                 success: false,
                 message: error.message
+            });
+        }
+    }
+
+    async userLogout(req, res) {
+        try {
+            const refreshToken = req.cookies?.refresh_token;
+
+            if (!refreshToken) {
+                return res.status(StatusCode.SUCCESS).json({
+                    status: true,
+                    message: "Already logged out",
+                });
+            }
+
+            let decoded;
+
+            try {
+                decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET_KEY);
+            }
+            catch (err) {
+                res.clearCookie("refresh_token");
+                return res.status(StatusCode.SUCCESS).json({
+                    status: true,
+                    message: "Logged out successfully",
+                });
+            }
+
+            const existToken = await tokenModel.findOne({ userId: decoded.user_id });
+
+            if (existToken && existToken.token) {
+                const isMatch = await bcrypt.compare(refreshToken, existToken.token);
+
+                if (isMatch) {
+                    existToken.token = null;
+                    await existToken.save();
+                }
+            }
+
+            res.clearCookie("refresh_token", {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+                path: "/",
+            });
+
+            return res.status(StatusCode.SUCCESS).json({
+                status: true,
+                message: "Logout successful",
+            });
+        } catch (err) {
+            return res.status(StatusCode.SERVER_ERROR).json({
+                status: false,
+                message: err.message
             });
         }
     }
