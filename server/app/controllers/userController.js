@@ -161,7 +161,7 @@ class UserController {
 
             return res.status(StatusCode.SUCCESS).json({
                 success: true,
-                message: `User ${user.isBlocked ? "blocked" : "unblocked"}`
+                message: `User ${user.isBlocked ? "blocked" : "unblocked"} successfully`
             });
 
         }
