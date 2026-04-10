@@ -41,7 +41,7 @@ class UserController {
                     const otpObj = new otpModel({ userId: user._id, otp });
                     await otpObj.save();
 
-                    await sendOTPMails({ user, otp, type:"resendOTP" });
+                    await sendOTPMails({ user, otp, type: "resendOTP" });
 
                     return res.status(StatusCode.SUCCESS).json({
                         success: success,
@@ -153,6 +153,8 @@ class UserController {
 
             user.isBlocked = !user.isBlocked;
             await user.save();
+
+            await sendOTPMails({ user, isBlocked: !user.isBlocked, reason: null });
 
             return res.status(StatusCode.SUCCESS).json({
                 success: true,

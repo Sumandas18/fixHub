@@ -1,6 +1,8 @@
 const StatusCode = require("../utils/statusCode");
 const userModel = require("../models/userModel");
+const serviceProviderModel = require("../models/serviceProviderModel");
 const checkUpdateProviderValidate = require("./../utils/validation/update/checkUpdateProviderValidation");
+const sendOTPMails = require("../utils/sendMail");
 class ProviderController {
 
   async getAllProvider(req, res) {
@@ -132,8 +134,10 @@ class ProviderController {
 
   async approveProvider(req, res) {
     try {
+      const statusType = ["approved", "rejected"];
 
       const providerId = req.params.id;
+      const status = req.params.status;
 
       if (!providerId) {
         return res.status(StatusCode.NOT_FOUND).json({
@@ -142,65 +146,31 @@ class ProviderController {
         });
       }
 
-      const provider = await userModel.findById(providerId);
+      if (!statusType.includes(status)) {
+        return res.status(StatusCode.BAD_GATEWAY).json({
+          success: false,
+          message: "Invalid status type"
+        });
+      }
 
-      if (!provider || provider.user_role !== "provider") {
+      const user = await userModel.findById(providerId);
+      const provider = await serviceProviderModel.findOne({ provider_id: user._id })
+
+      if (!user || user.user_role !== "provider" || !provider) {
         return res.status(StatusCode.NOT_FOUND).json({
           success: false,
           message: "Provider not found"
         });
       }
 
-      provider.isApproved = true;
+      provider.status = status;
       await provider.save();
+
+      await sendOTPMails({ user: provider, provider: { ...provider, status }, type: "providerStatus" });
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,
-        message: "Provider approved"
-      });
-
-    }
-    catch (error) {
-      return res.status(StatusCode.SERVER_ERROR).json({
-        success: false,
-        message: error.message
-      });
-    }
-  }
-
-  async blockUnblockProvider(req, res) {
-    try {
-      const providerId = req.params.id;
-
-      if (!providerId) {
-        return res.status(StatusCode.NOT_FOUND).json({
-          success: false,
-          message: "Provider ID is required"
-        })
-      }
-
-      const provider = await userModel.findById(providerId);
-
-      if (!provider) {
-        return res.status(StatusCode.NOT_FOUND).json({
-          success: false,
-          message: "Provider not found"
-        });
-      }
-
-      if (provider.user_role !== 'provider') {
-        return res.status(StatusCode.FORBIDDEN).json({
-          success: false,
-          message: "Unauthenticated"
-        });
-      }
-
-      provider.isBlocked = !provider.isBlocked;
-      await provider.save();
-
-      return res.status(StatusCode.SUCCESS).json({
-        success: true,
-        message: `Provider ${provider.isBlocked ? "blocked" : "unblocked"}`
+        message: `Provider ${status} successfully`
       });
 
     }

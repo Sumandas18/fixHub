@@ -31,6 +31,11 @@ const serviceProviderSchema = new schema({
         type: String,
         required: true
     },
+    status: {
+        type: String,
+        enum: ["pending", "approved", "rejected"],
+        default: "pending"
+    },
     isActive: {
         type: Boolean,
         default: true
@@ -38,6 +43,10 @@ const serviceProviderSchema = new schema({
     isAvailable: {
         type: Boolean,
         default: false
+    },
+    rejection_reason: {
+        type: String,
+        default: null
     }
 }, { timestamps: true, versionKey: false })
 

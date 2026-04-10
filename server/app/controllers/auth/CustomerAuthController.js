@@ -79,47 +79,62 @@ class CustomerAuthController {
 
             const existCustomer = await userModel.findOne({ user_email });
 
-            if (!existCustomer) {
+            if (!existCustomer || existCustomer.user_role != "customer") {
                 return res.status(StatusCode.NOT_FOUND).json({
                     success: false,
                     message: "User not found",
                 });
             }
+            else {
+                if (!existCustomer.isVerified) {
+                    return res.status(StatusCode.BAD_GATEWAY).json({
+                        success: false,
+                        message: "Email not verified yet"
+                    });
+                }
+                else if (existCustomer.isBlocked) {
+                    return res.status(StatusCode.BAD_GATEWAY).json({
+                        success: false,
+                        message: "Account is blocked"
+                    });
+                }
+                else {
+                    const isMatch = await bcrypt.compare(user_password, existCustomer.user_password);
 
-            const isMatch = await bcrypt.compare(user_password, existCustomer.user_password);
+                    if (!isMatch) {
+                        return res.status(StatusCode.BAD_REQUEST).json({
+                            success: false,
+                            message: "Invalid password",
+                        });
+                    }
 
-            if (!isMatch) {
-                return res.status(StatusCode.BAD_REQUEST).json({
-                    success: false,
-                    message: "Invalid password",
-                });
+                    const token = jwt.sign({
+                        user_id: existCustomer._id,
+                        user_role: existCustomer.user_role,
+                        user_email: existCustomer.user_email,
+                        user_name: existCustomer.user_name
+                    },
+                        process.env.JWT_SECRET_KEY, { expiresIn: "1h" }
+                    );
+
+                    existCustomer.lastLogin = Date.now();
+                    await existCustomer.save();
+
+                    return res.status(StatusCode.SUCCESS).json({
+                        success: true,
+                        message: "Login successful",
+                        data: {
+                            user_id: existCustomer._id,
+                            user_name: existCustomer.user_name,
+                            user_email: existCustomer.user_email,
+                            user_role: existCustomer.user_role,
+                            user_address: existCustomer.user_address,
+                            user_contact: existCustomer.user_contact
+                        },
+                        token
+                    });
+                }
             }
-
-            const token = jwt.sign({
-                user_id: existCustomer._id,
-                user_role: existCustomer.user_role,
-                user_email: existCustomer.user_email,
-                user_name: existCustomer.user_name
-            },
-                process.env.JWT_SECRET_KEY, { expiresIn: "1h" }
-            );
-
-            existCustomer.lastLogin = Date.now();
-            await existCustomer.save();
-
-            return res.status(StatusCode.SUCCESS).json({
-                success: true,
-                message: "Login successful",
-                data: {
-                    user_id: existCustomer._id,
-                    user_name: existCustomer.user_name,
-                    user_email: existCustomer.user_email,
-                    user_role: existCustomer.user_role,
-                    user_address: existCustomer.user_address,
-                    user_contact: existCustomer.user_contact
-                },
-                token
-            });
 
         } catch (err) {
             return res.status(StatusCode.SERVER_ERROR).json({

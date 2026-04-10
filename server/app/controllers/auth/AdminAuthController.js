@@ -75,42 +75,56 @@ class AdminAuthController {
             }
 
             const existAdmin = await userModel.findOne({ user_email });
-            if (!existAdmin) {
+            if (!existAdmin || existAdmin.user_role != "admin") {
                 return res.status(StatusCode.NOT_FOUND).json({
                     success: false,
                     message: "User doesn't exist"
                 });
             }
             else {
-                const verifyPassword = await bcrypt.compare(user_password, existAdmin.user_password);
-
-                if (!verifyPassword) {
-                    return res.status(StatusCode.BAD_REQUEST).json({
+                if (!existAdmin.isVerified) {
+                    return res.status(StatusCode.BAD_GATEWAY).json({
                         success: false,
-                        message: "Invalid password"
+                        message: "Email not verified yet"
+                    });
+                }
+                else if (existAdmin.isBlocked) {
+                    return res.status(StatusCode.BAD_GATEWAY).json({
+                        success: false,
+                        message: "Account is blocked"
                     });
                 }
                 else {
-                    const token = jwt.sign({
-                        user_id: existAdmin._id,
-                        user_name: existAdmin.user_name,
-                        user_email: existAdmin.user_email,
-                        user_role: existAdmin.user_role
-                    }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+                    const verifyPassword = await bcrypt.compare(user_password, existAdmin.user_password);
 
-                    existAdmin.lastLogin = Date.now();
-                    await existAdmin.save();
-
-                    return res.status(StatusCode.SUCCESS).json({
-                        success: true,
-                        message: "Login successful",
-                        data: {
+                    if (!verifyPassword) {
+                        return res.status(StatusCode.BAD_REQUEST).json({
+                            success: false,
+                            message: "Invalid password"
+                        });
+                    }
+                    else {
+                        const token = jwt.sign({
+                            user_id: existAdmin._id,
                             user_name: existAdmin.user_name,
                             user_email: existAdmin.user_email,
                             user_role: existAdmin.user_role
-                        },
-                        token
-                    });
+                        }, process.env.JWT_SECRET_KEY, { expiresIn: '1h' });
+
+                        existAdmin.lastLogin = Date.now();
+                        await existAdmin.save();
+
+                        return res.status(StatusCode.SUCCESS).json({
+                            success: true,
+                            message: "Login successful",
+                            data: {
+                                user_name: existAdmin.user_name,
+                                user_email: existAdmin.user_email,
+                                user_role: existAdmin.user_role
+                            },
+                            token
+                        });
+                    }
                 }
             }
         }

@@ -68,10 +68,6 @@ const userSchema = new Schema(
             type: Boolean,
             default: false
         },
-        isApproved: {
-            type: Boolean,
-            default: false
-        },
         isAvailable: {
             type: Boolean,
             default: false

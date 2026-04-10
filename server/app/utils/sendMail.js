@@ -2,6 +2,8 @@ const nodemailer = require("nodemailer");
 
 const registerOtpEmail = require("./mail/registerOtpEmail");
 const resendOtpEmail = require("./mail/resendOtpEmail");
+const providerApproveRejectEmail = require("./mail/providerApproveRejectEmail");
+const blockUnblockAccountEmail = require("./mail/blockUnblockAccountEmail");
 const bookingCancelledEmail = require("./mail/booking/bookingCancelledEmail");
 const bookingConfirmedEmail = require("./mail/booking/bookingConfirmedEmail");
 const bookingPlacedEmail = require("./mail/booking/bookingPlacedEmail");
@@ -16,7 +18,7 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-const sendOTPMails = async ({ user, booking, reason, type, otp }) => {
+const sendOTPMails = async ({ user, provider, booking, isBlocked, reason, type, otp }) => {
     try {
         let subject, html;
         const loginUrl = `http://localhost:${process.env.PORT || 4000}`;
@@ -28,6 +30,18 @@ const sendOTPMails = async ({ user, booking, reason, type, otp }) => {
         else if (type == "resendOTP") {
             subject = "Re-send OTP for email verification";
             html = resendOtpEmail(user, otp);
+        }
+        else if (type == "providerStatus") {
+            subject = provider.status === "approved"
+                ? "Provider Account Approved"
+                : provider.status === "rejected"
+                    ? "Provider Account Rejected"
+                    : "Provider Account Under Review";
+            html = providerApproveRejectEmail(user, provider);
+        }
+        else if (type == "blockunblockAccount") {
+            subject = isBlocked ? 'Your Fixhub Account Has Been Blocked' : 'Your Fixhub Account Has Been Unblocked';
+            html = blockUnblockAccountEmail(user, isBlocked, type = null);
         }
         else if (type == "cancelBooking") {
             subject = "Booking cancel";

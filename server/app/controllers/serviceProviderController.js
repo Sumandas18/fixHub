@@ -3,7 +3,9 @@ const cloudinary = require("cloudinary");
 const StatusCode = require('../utils/statusCode');
 const createServiceProviderValidation = require('../utils/validation/create/checkCreateServiceProviderValidation');
 const updateServiceProviderValidation = require('../utils/validation/update/checkUpdateServiceProviderValidation');
+const userModel = require('./../models/userModel');
 const serviceProviderModel = require('./../models/serviceProviderModel');
+const sendOTPMails = require("../utils/sendMail");
 
 class ServiceProviderController {
 
@@ -14,6 +16,8 @@ class ServiceProviderController {
             const { service_id, service_area_zip, experience, charges_per_hour } = req.body;
             const provider = req.user;
 
+            const user = await userModel.findById(provider.user_id);
+
             if (!service_id || !service_area_zip || !experience || !charges_per_hour) {
                 return res.status(StatusCode.NOT_FOUND).json({
                     success: false,
@@ -21,10 +25,10 @@ class ServiceProviderController {
                 });
             }
 
-            if (!provider) {
+            if (!provider || !user || user.user_role != 'provider') {
                 return res.status(StatusCode.NOT_FOUND).json({
                     success: false,
-                    message: "User not available"
+                    message: "Provider not available"
                 });
             }
 
@@ -47,9 +51,12 @@ class ServiceProviderController {
 
             const serviceProvider = await serviceProviderObj.save();
 
+            await sendOTPMails({ user, provider: serviceProvider, type: "providerStatus" });
+
             return res.status(StatusCode.CREATED).json({
                 success: true,
-                message: "Service added successfully"
+                message: "Service added successfully",
+                data: serviceProvider
             });
         }
         catch (err) {
