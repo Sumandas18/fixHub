@@ -19,6 +19,6 @@ const otpSchema = new Schema({
     }
 });
 
-const otpModel = mongoose.model('emailVerification', otpSchema);
+const otpModel = mongoose.model('emailVerificationotp', otpSchema);
 
 module.exports = otpModel;

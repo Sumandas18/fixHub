@@ -1,5 +1,4 @@
-const nodemailer = require("nodemailer");
-
+const transporter = require("./../config/emailConfig");
 const registerOtpEmail = require("./mail/registerOtpEmail");
 const resendOtpEmail = require("./mail/resendOtpEmail");
 const providerApproveRejectEmail = require("./mail/providerApproveRejectEmail");
@@ -9,19 +8,13 @@ const bookingConfirmedEmail = require("./mail/booking/bookingConfirmedEmail");
 const bookingPlacedEmail = require("./mail/booking/bookingPlacedEmail");
 const resendTaskOtpEmail = require("./mail/booking/resendTaskOtpEmail");
 const taskCompletedOtpEmail = require("./mail/booking/taskCompletedOtpEmail");
+const contactPlacedEmail = require("./mail/contact/contactPlacedEmail");
+const contactReplyEmail = require("./mail/contact/contactReplyEmail");
 
-const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: (process.env.EMAIL_USER || "").trim(),
-        pass: (process.env.EMAIL_PASS || "").trim(),
-    },
-});
-
-const sendOTPMails = async ({ user, provider, booking, isBlocked, reason, type, otp }) => {
+const sendOTPMails = async ({ user, provider, booking, isBlocked, reason, type, otp, contact }) => {
     try {
         let subject, html;
-        const loginUrl = `http://localhost:${process.env.PORT || 4000}`;
+        const email = user.user_email || contact.email;
 
         if (type == "newRegister") {
             subject = "Email verification";
@@ -62,6 +55,14 @@ const sendOTPMails = async ({ user, provider, booking, isBlocked, reason, type, 
         else if (type == "taskComplete") {
             subject = "OTP for finalizing the service";
             html = taskCompletedOtpEmail(user, booking, otp);
+        }
+        else if (type == "messageReceived") {
+            subject = "Fixhub Support – Query Received";
+            html = contactPlacedEmail(contact);
+        }
+        else if (type == "replySent") {
+            subject = "Fixhub Support – Response to Your Query";
+            html = contactReplyEmail(contact);
         }
         else {
             throw new Error('Invalid email type');
