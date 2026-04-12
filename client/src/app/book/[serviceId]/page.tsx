@@ -8,7 +8,7 @@ import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import { useUserStore } from '@/store/userStore';
 import styles from './Booking.module.css';
-import '../shared.css';
+import '../../shared.css';
 
 export default function BookingPage() {
   const params = useParams();

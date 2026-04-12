@@ -47,7 +47,7 @@ class UserController {
                     await sendOTPMails({ user, otp, type: "resendOTP" });
 
                     return res.status(StatusCode.SUCCESS).json({
-                        success: success,
+                        success: true,
                         message: "OTP re-send successfully"
                     })
                 }
