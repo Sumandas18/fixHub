@@ -1,0 +1,284 @@
+/* ── Admin Login Page — Two-column layout ── */
+.al-page {
+  min-height: 100vh;
+  display: flex;
+  background: #0b0f19;
+}
+
+/* Left branding panel */
+.al-brand {
+  width: 44%;
+  min-height: 100vh;
+  background: linear-gradient(160deg, rgba(28,78,216,0.18) 0%, rgba(139,92,246,0.12) 50%, rgba(11,15,25,1) 100%);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 50px;
+  position: relative;
+  overflow: hidden;
+}
+
+.al-brand::before {
+  content: '';
+  position: absolute;
+  top: -140px;
+  left: -140px;
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(235,94,40,0.1) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.al-brand::after {
+  content: '';
+  position: absolute;
+  bottom: -100px;
+  right: -80px;
+  width: 340px;
+  height: 340px;
+  background: radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.al-brand-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 360px;
+}
+
+.al-brand-logo-wrap {
+  margin-bottom: 28px;
+}
+
+.al-brand-tagline {
+  font-size: 15px;
+  color: #64748b;
+  line-height: 1.75;
+  max-width: 340px;
+  margin-bottom: 36px;
+}
+
+/* Feature list replaces pills */
+.al-features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.al-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.al-feature-item:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(235,94,40,0.2);
+}
+
+.al-feature-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, rgba(235,94,40,0.2), rgba(28,78,216,0.15));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #eb5e28;
+  flex-shrink: 0;
+}
+
+.al-feature-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin-bottom: 2px;
+}
+
+.al-feature-desc {
+  font-size: 12px;
+  color: #475569;
+}
+
+/* Right form side */
+.al-form-side {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.al-card {
+  width: 100%;
+  max-width: 420px;
+}
+
+.al-card-top {
+  margin-bottom: 32px;
+}
+
+.al-role-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #eb5e28;
+  background: rgba(235,94,40,0.1);
+  border: 1px solid rgba(235,94,40,0.2);
+  border-radius: 20px;
+  padding: 5px 14px;
+  margin-bottom: 16px;
+  gap: 5px;
+}
+
+.al-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  color: #f1f5f9;
+  margin-bottom: 6px;
+  letter-spacing: -0.5px;
+}
+
+.al-subtitle {
+  font-size: 14px;
+  color: #64748b;
+}
+
+/* Form */
+.al-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.al-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.al-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.al-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 10px;
+  color: #f1f5f9;
+  font-size: 14px;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  outline: none;
+  font-family: inherit;
+}
+
+.al-input::placeholder { color: #475569; }
+
+.al-input:focus {
+  border-color: rgba(235,94,40,0.5);
+  background: rgba(255,255,255,0.06);
+  box-shadow: 0 0 0 3px rgba(235,94,40,0.08);
+}
+
+.al-input-wrap {
+  position: relative;
+}
+
+.al-input-wrap .al-input {
+  padding-right: 46px;
+}
+
+.al-eye-btn {
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #475569;
+  cursor: pointer;
+  display: flex;
+  transition: color 0.15s;
+}
+.al-eye-btn:hover { color: #eb5e28; }
+
+.al-submit {
+  width: 100%;
+  padding: 13px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #eb5e28 0%, #c94f1c 100%);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
+  margin-top: 4px;
+  box-shadow: 0 4px 16px rgba(235,94,40,0.25);
+  font-family: inherit;
+}
+
+.al-submit:hover:not(:disabled) {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(235,94,40,0.35);
+}
+
+.al-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.al-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.al-spin { animation: spin 0.8s linear infinite; }
+
+.al-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+  margin: 28px 0;
+}
+
+.al-footer {
+  text-align: center;
+  font-size: 13px;
+  color: #475569;
+}
+
+.al-link {
+  color: #eb5e28;
+  font-weight: 600;
+  transition: color 0.15s;
+}
+
+.al-link:hover { color: #d2501e; text-decoration: underline; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .al-page { flex-direction: column; }
+  .al-brand { width: 100%; min-height: auto; padding: 40px 24px; }
+  .al-features-list { display: none; }
+}

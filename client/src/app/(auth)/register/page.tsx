@@ -52,8 +52,8 @@ export default function Register() {
       });
       
       if (res.data.success || res.status === 201) {
-        toast.success('Account created! Please log in.');
-        router.push('/login');
+        toast.success('Account created! Please verify your email.');
+        router.push(`/verify?email=${encodeURIComponent(formData.email)}&userId=${res.data.data._id}`);
       } else {
         toast.error(res.data.message || 'Registration failed');
       }

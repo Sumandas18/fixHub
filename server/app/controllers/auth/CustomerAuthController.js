@@ -53,6 +53,9 @@ class CustomerAuthController {
             const otpObj = new otpModel({ userId: customer._id, otp });
             await otpObj.save();
 
+            // LOG OTP FOR TESTING
+            console.log(`[TESTING] OTP for ${user_email} is ${otp}`);
+
             await sendOTPMails({ user: customer, type: "newRegister", otp });
 
             return res.status(StatusCode.CREATED).json({

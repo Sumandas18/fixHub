@@ -8,7 +8,7 @@ module.exports = (user, booking, reason = "") => {
             </div>
 
             <div style="padding:28px;">
-                <p>Hi <strong>${user.name.split(" ")[0]}</strong>,</p>
+                <p>Hi <strong>${user.user_name.split(" ")[0]}</strong>,</p>
 
                 <p>
                     Unfortunately, your booking has been cancelled.

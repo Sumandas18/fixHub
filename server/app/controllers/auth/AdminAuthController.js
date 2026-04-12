@@ -8,6 +8,7 @@ const tokenModel = require("../../models/tokenModel");
 
 const checkAdminValidate = require("../../utils/validation/create/checkCreateAdminValidation");
 const sendOTPMails = require("../../utils/sendMail");
+const generateOTP = require("../../helper/generateOTP");
 
 class AdminAuthController {
 

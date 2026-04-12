@@ -11,7 +11,7 @@ module.exports.taskCompletedOtpEmail = (user, booking, otp) => {
             </div>
 
             <div style="padding:28px;">
-                <p>Hi <strong>${user.name.split(" ")[0]}</strong>,</p>
+                <p>Hi <strong>${user.user_name.split(" ")[0]}</strong>,</p>
 
                 <p>
                     The service provider has marked your booking as <strong>completed</strong>.

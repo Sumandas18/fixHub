@@ -11,7 +11,7 @@ module.exports = (user, booking, otp) => {
             </div>
 
             <div style="padding:28px;">
-                <p>Hi <strong>${user.name.split(" ")[0]}</strong>,</p>
+                <p>Hi <strong>${user.user_name.split(" ")[0]}</strong>,</p>
 
                 <p>
                     As requested, here is your new OTP to complete the service.

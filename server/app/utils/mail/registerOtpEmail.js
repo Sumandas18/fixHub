@@ -13,7 +13,7 @@ module.exports = (user, otp) => {
 
             <!-- Body -->
             <div style="padding:28px;">
-                <p style="font-size:15px;">Hi <strong>${user.name.split(" ")[0]}</strong>,</p>
+                <p style="font-size:15px;">Hi <strong>${user.user_name.split(" ")[0]}</strong>,</p>
 
                 <p style="color:#374151;">
                     Thank you for registering with <strong>Fixhub</strong>.  

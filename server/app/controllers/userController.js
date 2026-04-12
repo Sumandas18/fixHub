@@ -14,21 +14,21 @@ class UserController {
 
     async resendOTP(req, res) {
         try {
-            const { email } = req.body;
+            const { userId } = req.body;
 
-            if (!email) {
+            if (!userId) {
                 return res.status(StatusCode.BAD_GATEWAY).json({
                     success: false,
                     message: "All fields are required"
                 })
             }
 
-            const user = await userModel.findOne({ email });
+            const user = await userModel.findById(userId);
 
             if (!user) {
                 return res.status(StatusCode.BAD_GATEWAY).json({
                     success: false,
-                    message: "Invalid email"
+                    message: "User not found"
                 })
             }
             else {
@@ -55,6 +55,7 @@ class UserController {
 
         }
         catch (err) {
+            console.error('[ResendOTP Error]:', err);
             return res.status(StatusCode.SERVER_ERROR).json({
                 success: false,
                 message: err.message
@@ -64,21 +65,21 @@ class UserController {
 
     async verifyOTP(req, res) {
         try {
-            const { email, otp } = req.body;
+            const { userId, otp } = req.body;
 
-            if (!email || !otp) {
+            if (!userId || !otp) {
                 return res.status(StatusCode.BAD_GATEWAY).json({
                     success: false,
                     message: "All fields are required"
                 })
             }
 
-            const user = await userModel.findOne({ email });
+            const user = await userModel.findById(userId);
 
             if (!user) {
                 return res.status(StatusCode.BAD_GATEWAY).json({
                     success: false,
-                    message: "Invalid email"
+                    message: "User not found"
                 })
             }
             else {
@@ -97,6 +98,16 @@ class UserController {
                             message: "Invalid OTP"
                         })
                     }
+
+                    // Strict manual 5 min check
+                    const diffMins = (new Date() - new Date(checkOTP.createdAt)) / 60000;
+                    if (diffMins > 5) {
+                        await otpModel.deleteMany({ userId: user._id });
+                        return res.status(StatusCode.BAD_GATEWAY).json({
+                            success: false,
+                            message: "OTP has expired. Please request a new one."
+                        })
+                    }
                     else {
                         user.isVerified = true;
                         await user.save();
@@ -112,6 +123,7 @@ class UserController {
             }
         }
         catch (err) {
+            console.error('[VerifyOTP Error]:', err);
             return res.status(StatusCode.SERVER_ERROR).json({
                 success: false,
                 message: err.message
