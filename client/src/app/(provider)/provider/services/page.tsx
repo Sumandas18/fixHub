@@ -16,9 +16,12 @@ export default function ProviderServicesPage() {
     const fetchServices = async () => {
       try {
         const res = await providerApi.getServices();
-        setServices(res.data || []);
+        // Normalize — backend may return { data: [] } or bare array
+        const raw = res?.data ?? res ?? [];
+        setServices(Array.isArray(raw) ? raw : []);
       } catch (err) {
         toast.error('Failed to load services');
+        setServices([]); // always fall back to empty array, never undefined
       } finally {
         setLoading(false);
       }

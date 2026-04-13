@@ -2,18 +2,18 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
   UserCheck,
-  Briefcase,
   CalendarDays,
   Star,
   ShieldCheck,
   LogOut,
   Wrench,
 } from 'lucide-react';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const navItems = [
   {
@@ -38,17 +38,26 @@ const navItems = [
       { label: 'Ratings',    href: '/admin/ratings',    icon: Star },
     ],
   },
+  {
+    section: 'Settings',
+    links: [
+      { label: 'Profile',    href: '/admin/profile',    icon: UserCheck },
+    ]
+  }
 ];
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const router   = useRouter();
+  const { user, logout } = useAuthStore();
+
+  const displayName  = user?.name || user?.user_name || 'Admin User';
+  const displayRole  = user?.role === 'admin' ? 'Super Admin' : 'Admin';
+  const displayInitial = (displayName[0] || 'A').toUpperCase();
 
   const handleLogout = () => {
-    // Clear cookies via document.cookie (js-cookie)
-    document.cookie = 'token=; Max-Age=0; path=/';
-    document.cookie = 'role=; Max-Age=0; path=/';
-    // Zustand store reset will be wired via useAuthStore in the full integration step
-    window.location.href = '/admin/login';
+    logout();
+    router.push('/admin/login');
   };
 
   return (
@@ -84,10 +93,10 @@ export default function AdminSidebar() {
       {/* Footer */}
       <div className="sidebar-footer">
         <div className="sidebar-user-card">
-          <div className="sidebar-avatar">A</div>
+          <div className="sidebar-avatar">{displayInitial}</div>
           <div>
-            <p className="sidebar-user-name">Admin User</p>
-            <p className="sidebar-user-role">Super Admin</p>
+            <p className="sidebar-user-name">{displayName}</p>
+            <p className="sidebar-user-role">{displayRole}</p>
           </div>
         </div>
         <button className="sidebar-logout-btn" onClick={handleLogout}>

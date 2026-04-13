@@ -13,6 +13,6 @@ const checkCreateAdminValidate = JOI.object({
             "string.pattern.base":
                 "Password must contain uppercase, lowercase, number and special character"
         })
-});
+}).unknown(true);
 
 module.exports = checkCreateAdminValidate;

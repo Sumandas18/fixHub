@@ -10,6 +10,7 @@ const resendTaskOtpEmail = require("./mail/booking/resendTaskOtpEmail");
 const taskCompletedOtpEmail = require("./mail/booking/taskCompletedOtpEmail");
 const contactPlacedEmail = require("./mail/contact/contactPlacedEmail");
 const contactReplyEmail = require("./mail/contact/contactReplyEmail");
+const passwordChangedEmail = require("./mail/passwordChangedEmail");
 
 const sendOTPMails = async ({ user, provider, booking, isBlocked, reason, type, otp, contact }) => {
     try {
@@ -63,6 +64,10 @@ const sendOTPMails = async ({ user, provider, booking, isBlocked, reason, type, 
         else if (type == "replySent") {
             subject = "Fixhub Support – Response to Your Query";
             html = contactReplyEmail(contact);
+        }
+        else if (type == "updatePassword") {
+            subject = "Fixhub - Password Updated";
+            html = passwordChangedEmail(user);
         }
         else {
             throw new Error('Invalid email type');

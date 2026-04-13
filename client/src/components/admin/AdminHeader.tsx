@@ -1,8 +1,14 @@
 'use client';
 
 import { Bell, Search } from 'lucide-react';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function AdminHeader() {
+  const { user } = useAuthStore();
+  const displayName  = user?.name || (user as any)?.user_name || 'Admin User';
+  const displayEmail = user?.email || (user as any)?.user_email || 'admin@fixhub.com';
+  const displayInitial = (displayName[0] || 'A').toUpperCase();
+
   return (
     <header className="admin-header">
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -41,10 +47,12 @@ export default function AdminHeader() {
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div className="sidebar-avatar" style={{ width: 36, height: 36, fontSize: 14 }}>A</div>
+          <div className="sidebar-avatar" style={{ width: 36, height: 36, fontSize: 14 }}>
+            {displayInitial}
+          </div>
           <div>
-            <p style={{ fontSize: '13px', fontWeight: 600, color: '#f1f5f9', lineHeight: 1.3 }}>Admin User</p>
-            <p style={{ fontSize: '11px', color: '#4a5568' }}>admin@fixhub.com</p>
+            <p style={{ fontSize: '13px', fontWeight: 600, color: '#f1f5f9', lineHeight: 1.3 }}>{displayName}</p>
+            <p style={{ fontSize: '11px', color: '#4a5568' }}>{displayEmail}</p>
           </div>
         </div>
       </div>

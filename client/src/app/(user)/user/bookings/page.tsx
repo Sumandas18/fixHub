@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { containerVariants, fadeUpVariant, scaleUpVariant } from '@/lib/animations';
 
-const TABS = ['All', 'Upcoming', 'Completed', 'Cancelled'];
+const TABS = ['All', 'Upcoming', 'Accepted', 'Completed', 'Cancelled', 'Rejected'];
 
 export default function UserBookingsPage() {
   const [activeTab, setActiveTab] = useState('All');
@@ -35,10 +35,20 @@ export default function UserBookingsPage() {
   const filtered = bookings.filter((b) => {
     if (activeTab === 'All') return true;
     if (activeTab === 'Upcoming') return b.status === 'pending' || b.status === 'confirmed' || b.status === 'in-progress';
+    if (activeTab === 'Accepted') return b.status === 'accepted';
     if (activeTab === 'Completed') return b.status === 'completed';
     if (activeTab === 'Cancelled') return b.status === 'cancelled';
+    if (activeTab === 'Rejected') return b.status === 'rejected';
     return true;
   });
+
+  const getStatusColor = (s: string) => {
+    if (s === 'pending') return '#eab308'; // yellow
+    if (s === 'accepted' || s === 'confirmed') return '#22c55e'; // green
+    if (s === 'rejected' || s === 'cancelled') return '#ef4444'; // red
+    if (s === 'completed') return '#3b82f6'; // blue
+    return '#94a3b8';
+  };
 
   const handleRate = () => {
     if (selectedBooking) {
@@ -99,23 +109,27 @@ export default function UserBookingsPage() {
                 filtered.map((b) => (
                   <tr key={b._id}>
                     <td>
-                      <p style={{ fontWeight: 600, color: '#f1f5f9' }}>{b.service_provider_id?.service_id?.service_name || 'Booked Service'}</p>
+                      <p style={{ fontWeight: 600, color: '#f1f5f9' }}>{b.service_provider_id?.service_id?.service_name || b.service_id?.service_name || 'Booked Service'}</p>
                       <p style={{ fontSize: 12, color: '#64748b', fontFamily: 'monospace' }}>{b._id.substring(b._id.length - 6).toUpperCase()}</p>
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#eb5e28,#1c4ed8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff' }}>
-                          {(b.service_provider_id?.provider_id?.name || 'P')[0]}
+                          {(b.service_provider_id?.provider_id?.name || 'A')[0]}
                         </div>
-                        {b.service_provider_id?.provider_id?.name || 'Provider'}
+                        {b.service_provider_id?.provider_id?.name || 'Awaiting Provider'}
                       </div>
                     </td>
                     <td style={{ color: '#94a3b8' }}>
                       {new Date(b.scheduled_date || b.createdAt).toLocaleDateString('en-US')}<br />
-                      <span style={{ fontSize: 12, color: '#64748b' }}>{b.scheduled_time || 'N/A'}</span>
+                      <span style={{ fontSize: 12, color: '#64748b' }}>{b.scheduled_time || 'TBD'}</span>
                     </td>
-                    <td style={{ fontWeight: 600, color: '#4ade80' }}>₹{b.service_provider_id?.charges_per_hour || 0}</td>
-                    <td><span className={`usr-badge ${b.status}`}>{b.status}</span></td>
+                    <td style={{ fontWeight: 600, color: '#4ade80' }}>{b.service_provider_id?.charges_per_hour ? `₹${b.service_provider_id.charges_per_hour}` : 'TBD'}</td>
+                    <td>
+                      <span style={{ padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: `${getStatusColor(b.status)}20`, color: getStatusColor(b.status), textTransform: 'capitalize' }}>
+                        {b.status}
+                      </span>
+                    </td>
                     <td>
                       {b.status === 'confirmed' && b.otp && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

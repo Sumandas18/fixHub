@@ -4,16 +4,15 @@ import React, { useEffect, useState } from 'react';
 import styles from './Services.module.css';
 import ServiceCard from './ServiceCard';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import api from '@/lib/api';
+import { ArrowRight } from 'lucide-react';
 
-// Static fallback services
-const FALLBACK_SERVICES = [
-  { id: '1', title: 'Home Appliance Repair', description: 'AC, Refrigerator, Washing machine & Microwave repair.', target: 'Daily need, high conversion service', icon: '🔌' },
-  { id: '2', title: 'Electrical Services', description: 'Wiring, switch fixing, fan installation & short circuits.', target: 'Emergency & fast booking', icon: '⚡' },
-  { id: '3', title: 'Plumbing Services', description: 'Pipe leakage, tap repair, bathroom fittings & tank cleaning.', target: 'Very high demand service', icon: '🚿' },
-  { id: '4', title: 'Home Cleaning Services', description: 'Full home, sofa, bathroom & kitchen deep cleaning.', target: 'Available on subscription model', icon: '🧹' },
-  { id: '5', title: 'Home Maintenance & Handyman', description: 'Furniture repair, lock fixing & small home fixes.', target: 'All-in-one category', icon: '🔐' },
-  { id: '6', title: 'Bike & Car Services', description: 'Bike servicing, car repair, battery jumpstart & emergency help.', target: 'On-Demand roadside help', icon: '🛵' },
+// Only 3 featured services shown on the landing page
+const FEATURED_SERVICES = [
+  { id: '1', title: 'Home Repair', description: 'AC, refrigerator, washing machine & appliance repair by certified technicians.', target: 'Daily need, high conversion', icon: '🔌' },
+  { id: '2', title: 'Electrical', description: 'Wiring, switch fixing, fan installation & short circuit repairs done safely.', target: 'Emergency & fast booking', icon: '⚡' },
+  { id: '3', title: 'Plumbing', description: 'Pipe leakage, tap repair, bathroom fittings & tank cleaning — done right.', target: 'Very high demand service', icon: '🚿' },
 ];
 
 interface ServiceItem {
@@ -35,7 +34,7 @@ function mapApiService(s: any): ServiceItem {
 }
 
 export default function Services() {
-  const [services, setServices] = useState<ServiceItem[]>(FALLBACK_SERVICES);
+  const [services, setServices] = useState<ServiceItem[]>(FEATURED_SERVICES);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -43,11 +42,11 @@ export default function Services() {
         const res = await api.get('/service');
         const data = res.data.data || res.data.services || res.data;
         if (Array.isArray(data) && data.length > 0) {
-          setServices(data.map(mapApiService));
+          // Show only first 3 from API on the landing page
+          setServices(data.slice(0, 3).map(mapApiService));
         }
-        // If empty, keeps the fallback static data
       } catch {
-        // Network error – keep static fallback silently
+        // Keep static fallback silently
       }
     };
     fetchServices();
@@ -72,15 +71,45 @@ export default function Services() {
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          Explore our wide range of professional, on-demand services designed to make your life easier and more comfortable.
+          Professional, on-demand services designed to make your life easier.
         </motion.p>
       </div>
 
-      <div className={styles.grid}>
+      {/* 3-card grid — centered */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, maxWidth: 960, margin: '0 auto' }}>
         {services.map((service, index) => (
           <ServiceCard key={service.id} service={service} index={index} />
         ))}
       </div>
+
+      {/* View All button */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        style={{ textAlign: 'center', marginTop: 40 }}
+      >
+        <Link
+          href="/services"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '13px 32px',
+            fontSize: 14,
+            fontWeight: 700,
+            color: '#fff',
+            background: 'linear-gradient(135deg, #a855f7 0%, #3b82f6 60%)',
+            borderRadius: 50,
+            textDecoration: 'none',
+            boxShadow: '0 4px 20px rgba(168,85,247,0.3)',
+            transition: 'all 0.25s ease',
+          }}
+        >
+          View All Services <ArrowRight size={16} />
+        </Link>
+      </motion.div>
     </section>
   );
 }

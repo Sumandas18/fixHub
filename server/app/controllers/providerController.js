@@ -226,6 +226,56 @@ class ProviderController {
     }
   }
 
+  async patchProviderStatus(req, res) {
+    try {
+      const providerId = req.params.id;
+      const { status } = req.body;
+
+      if (!providerId) {
+        return res.status(StatusCode.NOT_FOUND).json({
+          success: false,
+          message: "Provider ID not found"
+        });
+      }
+
+      if (!['approved', 'rejected'].includes(status)) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          success: false,
+          message: "Invalid status"
+        });
+      }
+
+      const user = await userModel.findById(providerId);
+      const provider = await serviceProviderModel.findOne({ provider_id: user?._id });
+
+      if (!user || user.user_role !== "provider" || !provider) {
+        return res.status(StatusCode.NOT_FOUND).json({
+          success: false,
+          message: "Provider not found"
+        });
+      }
+
+      provider.status = status;
+      await provider.save();
+
+      // We can also trigger the approval logic if we want, similar to approveProvider
+      await sendOTPMails({ user: provider, provider: { ...provider.toObject(), status }, type: "providerStatus" });
+
+      return res.status(StatusCode.SUCCESS).json({
+        success: true,
+        message: `Provider ${status} successfully`,
+        data: provider
+      });
+
+    }
+    catch (error) {
+      return res.status(StatusCode.SERVER_ERROR).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
 }
 
 module.exports = new ProviderController();

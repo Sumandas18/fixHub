@@ -28,6 +28,12 @@ const navItems = [
       { label: 'Reviews',   href: '/provider/reviews',   icon: Star },
     ],
   },
+  {
+    section: 'Settings',
+    links: [
+      { label: 'Profile',   href: '/provider/profile',   icon: Briefcase },
+    ],
+  },
 ];
 
 export default function ProviderSidebar() {

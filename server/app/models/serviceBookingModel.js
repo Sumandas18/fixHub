@@ -7,21 +7,23 @@ const serviceBookingSchema = new schema({
         type: schema.Types.ObjectId,
         ref: 'user'
     },
+    service_id: {
+        type: schema.Types.ObjectId,
+        ref: 'service'
+    },
     service_provider_id: {
         type: schema.Types.ObjectId,
         ref: 'serviceProvider'
     },
     scheduled_date: {
-        type: Date,
-        required: true
+        type: Date
     },
     scheduled_time: {
-        type: String,
-        required: true
+        type: String
     },
     status: {
         type: String,
-        enum: ['pending', 'confirmed', 'completed', 'cancelled'],
+        enum: ['pending', 'accepted', 'rejected', 'confirmed', 'completed', 'cancelled'],
         default: 'pending'
     }
 }, { timestamps: true, versionKey: false })

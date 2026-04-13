@@ -88,22 +88,30 @@ class ServiceProviderController {
 
     async getProviderORServiceWiseServiceProvider(req, res) {
         try {
-            let fetchServiceProvider;
-            const { provider_id, service_id } = req.body;
+            // Default to empty array — GET requests carry no body,
+            // so provider_id / service_id may both be absent.
+            let fetchServiceProvider = [];
+            
+            // Handle null provider by checking req.user if it is a provider
+            let provider_id = req.user?.user_role === 'provider' ? (req.user.user_id || req.user._id) : (req.query?.provider_id || req.body?.provider_id);
+            let service_id = req.query?.service_id || req.body?.service_id;
 
             if (provider_id) {
-                fetchServiceProvider = await serviceProviderModel.find({ provider_id });
+                fetchServiceProvider = await serviceProviderModel
+                    .find({ provider_id })
+                    .populate('service_id') || [];
+            } else if (service_id) {
+                fetchServiceProvider = await serviceProviderModel
+                    .find({ service_id })
+                    .populate('service_id') || [];
             }
 
-            if (service_id) {
-                fetchServiceProvider = await serviceProviderModel.find({ service_id });
-            }
-
+            // Always return empty array if no services
             return res.status(StatusCode.SUCCESS).json({
                 success: true,
                 message: "Filter wise available service-provider",
-                count: fetchServiceProvider.length,
-                data: fetchServiceProvider
+                count: fetchServiceProvider?.length || 0,
+                data: fetchServiceProvider || []
             });
         }
         catch (err) {

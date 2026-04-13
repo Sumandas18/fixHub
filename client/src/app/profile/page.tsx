@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Header from '@/components/Header/Header';
 import Footer from '@/components/Footer/Footer';
 import api from '@/lib/api';
-import { useUserStore } from '@/store/userStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import styles from './Profile.module.css';
@@ -22,7 +22,8 @@ interface Booking {
 }
 
 export default function ProfilePage() {
-  const { user, isAuthenticated, isLoading, logout } = useUserStore();
+  const { user, isLoading, logout } = useAuthStore();
+  const isAuthenticated = user !== null;
   const router = useRouter();
 
   const handleLogout = () => {

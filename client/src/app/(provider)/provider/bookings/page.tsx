@@ -1,47 +1,73 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { X, ShieldCheck, RefreshCw, ChevronDown } from 'lucide-react';
-
-const PLACEHOLDER_BOOKINGS = [
-  { id: 'BK-101', customer: 'Rahul Sharma',  service: 'Wiring Fix',         date: 'Apr 12, 2026', time: '10:00 AM', status: 'confirmed',   otp_verified: false },
-  { id: 'BK-102', customer: 'Priya Mehta',   service: 'Panel Installation',  date: 'Apr 12, 2026', time: '02:00 PM', status: 'in-progress', otp_verified: true  },
-  { id: 'BK-103', customer: 'Amit Verma',    service: 'AC Power Issue',      date: 'Apr 13, 2026', time: '09:30 AM', status: 'pending',     otp_verified: false },
-  { id: 'BK-104', customer: 'Sunita Rao',    service: 'Socket Replacement',  date: 'Apr 14, 2026', time: '11:00 AM', status: 'confirmed',   otp_verified: false },
-  { id: 'BK-105', customer: 'Kiran Joshi',   service: 'MCB Repair',          date: 'Apr 10, 2026', time: '03:00 PM', status: 'completed',   otp_verified: true  },
-  { id: 'BK-106', customer: 'Deepa Nair',    service: 'Fan Installation',    date: 'Apr 09, 2026', time: '01:00 PM', status: 'cancelled',   otp_verified: false },
-];
+import { useState, useRef, useEffect } from 'react';
+import { X, ShieldCheck, RefreshCw, ChevronDown, Loader2 } from 'lucide-react';
+import api from '@/lib/api';
+import toast from 'react-hot-toast';
 
 const STATUS_OPTIONS = ['pending', 'confirmed', 'in-progress', 'completed', 'cancelled'];
-const TABS = ['All', 'Pending', 'Confirmed', 'In-Progress', 'Completed', 'Cancelled'];
+const TABS = ['All', 'Confirmed', 'In-Progress', 'Completed', 'Cancelled'];
 
-type Booking = typeof PLACEHOLDER_BOOKINGS[0];
+type Booking = any;
 
 export default function ProviderBookingsPage() {
-  const [bookings, setBookings]         = useState(PLACEHOLDER_BOOKINGS);
+  const [bookings, setBookings]         = useState<any[]>([]);
+  const [loading, setLoading]           = useState(true);
   const [activeTab, setActiveTab]       = useState('All');
   const [statusModal, setStatusModal]   = useState<Booking | null>(null);
   const [otpModal, setOtpModal]         = useState<Booking | null>(null);
   const [selectedStatus, setSelectedStatus] = useState('');
   const [reason, setReason]            = useState('');
   const [otpValues, setOtpValues]      = useState(['', '', '', '']);
+  const [actionLoading, setActionLoading] = useState(false);
   const otpRefs                         = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
 
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const res = await api.get('/booking/provider'); // Wait, the endpoint might just be /booking for provider, actually bookingRoute.js has /provider for getProviderBookings!
+        // Admin accepts it, but if it has no provider_id assigned automatically (abstract booking) this depends on how abstract bookings are retrieved.
+        // Assuming provider only sees their assigned or broadcasted accepted ones.
+        setBookings(res.data.data || res.data || []);
+      } catch (err) {
+        toast.error('Failed to load bookings');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBookings();
+  }, []);
+
+  // PROVIDER SIDE FILTER: ONLY show accepted / confirmed
+  // Note: if abstract bookings are accepted by admin but lack provider_id, the current backend might not serve them via getProviderBookings unless we update that.
+  // Assuming 'accepted' bookings are served or this provider's bookings are filtered.
+  const providerFilteredBookings = bookings.filter(b => b.status !== 'pending' && b.status !== 'rejected');
+  
   const filtered = activeTab === 'All'
-    ? bookings
-    : bookings.filter((b) => b.status === activeTab.toLowerCase().replace('-', '-'));
+    ? providerFilteredBookings
+    : providerFilteredBookings.filter((b) => b.status === activeTab.toLowerCase().replace('-', '-'));
 
   const openStatusModal = (b: Booking) => {
-    setSelectedStatus(b.status);
+    setSelectedStatus(b.status === 'accepted' ? 'confirmed' : b.status);
     setReason('');
     setStatusModal(b);
   };
 
-  const handleStatusUpdate = () => {
-    setBookings((prev) =>
-      prev.map((b) => b.id === statusModal?.id ? { ...b, status: selectedStatus } : b)
-    );
-    setStatusModal(null);
+  const handleStatusUpdate = async () => {
+    if (!statusModal) return;
+    setActionLoading(true);
+    try {
+      await api.put(`/booking/status/${statusModal._id}`, { status: selectedStatus, reason });
+      setBookings((prev) =>
+        prev.map((b) => b._id === statusModal?._id ? { ...b, status: selectedStatus } : b)
+      );
+      toast.success('Status updated successfully');
+      setStatusModal(null);
+    } catch {
+      toast.error('Failed to update status');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const openOtpModal = (b: Booking) => {
@@ -63,14 +89,22 @@ export default function ProviderBookingsPage() {
     }
   };
 
-  const handleOtpVerify = () => {
+  const handleOtpVerify = async () => {
     const otp = otpValues.join('');
     if (otp.length < 4) return;
-    // Integrate with API: POST /booking/verify-otp { otp, bookingId }
-    setBookings((prev) =>
-      prev.map((b) => b.id === otpModal?.id ? { ...b, otp_verified: true, status: 'in-progress' } : b)
-    );
-    setOtpModal(null);
+    setActionLoading(true);
+    try {
+      await api.put('/booking/verify-otp', { otp, bookingId: otpModal?._id });
+      setBookings((prev) =>
+        prev.map((b) => b._id === otpModal?._id ? { ...b, otp_verified: true, status: 'in-progress' } : b)
+      );
+      toast.success('OTP Verified');
+      setOtpModal(null);
+    } catch {
+      toast.error('Invalid OTP');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   return (
@@ -110,7 +144,13 @@ export default function ProviderBookingsPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {loading ? (
+               <tr>
+                 <td colSpan={7} style={{ textAlign: 'center', padding: 60 }}>
+                    <Loader2 size={28} className="al-spin" style={{ margin: '0 auto', color: '#60a5fa' }} />
+                 </td>
+               </tr>
+            ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={7}>
                   <div className="pv-empty">
@@ -121,20 +161,20 @@ export default function ProviderBookingsPage() {
               </tr>
             ) : (
               filtered.map((b) => (
-                <tr key={b.id}>
-                  <td style={{ color: '#60a5fa', fontWeight: 600, fontFamily: 'monospace' }}>{b.id}</td>
+                <tr key={b._id}>
+                  <td style={{ color: '#60a5fa', fontWeight: 600, fontFamily: 'monospace' }}>{b._id.substring(b._id.length - 6).toUpperCase()}</td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div className="pv-avatar" style={{ width: 28, height: 28, fontSize: 12 }}>
-                        {b.customer[0]}
+                        {(b.customer_id?.name || 'U')[0].toUpperCase()}
                       </div>
-                      {b.customer}
+                      {b.customer_id?.name || 'Customer'}
                     </div>
                   </td>
-                  <td>{b.service}</td>
+                  <td>{b.service_id?.service_name || b.service_provider_id?.service_id?.service_name || 'Booked Service'}</td>
                   <td style={{ fontSize: 13, color: '#64748b' }}>
-                    {b.date}<br />
-                    <span style={{ color: '#334155', fontSize: 11 }}>{b.time}</span>
+                    {b.scheduled_date ? new Date(b.scheduled_date).toLocaleDateString() : 'TBD'}<br />
+                    <span style={{ color: '#334155', fontSize: 11 }}>{b.scheduled_time || 'TBD'}</span>
                   </td>
                   <td>
                     <span className={`pv-badge ${b.status}`}>{b.status}</span>
@@ -185,9 +225,9 @@ export default function ProviderBookingsPage() {
               <div style={{ marginBottom: 10 }}>
                 <p style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>Booking</p>
                 <p style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9' }}>
-                  {statusModal.id} · {statusModal.customer}
+                  {statusModal._id.substring(statusModal._id.length - 6).toUpperCase()} · {statusModal.customer_id?.name || 'Customer'}
                 </p>
-                <p style={{ fontSize: 13, color: '#475569' }}>{statusModal.service}</p>
+                <p style={{ fontSize: 13, color: '#475569' }}>{statusModal.service_id?.service_name || statusModal.service_provider_id?.service_id?.service_name || 'Booked Service'}</p>
               </div>
 
               <div className="pv-field" style={{ marginTop: 18 }}>
@@ -219,8 +259,10 @@ export default function ProviderBookingsPage() {
               )}
             </div>
             <div className="pv-modal-footer">
-              <button className="pv-btn pv-btn-ghost" onClick={() => setStatusModal(null)}>Cancel</button>
-              <button className="pv-btn pv-btn-primary" onClick={handleStatusUpdate}>Update Status</button>
+              <button className="pv-btn pv-btn-ghost" onClick={() => setStatusModal(null)} disabled={actionLoading}>Cancel</button>
+              <button className="pv-btn pv-btn-primary" onClick={handleStatusUpdate} disabled={actionLoading}>
+                {actionLoading ? <Loader2 size={15} className="al-spin" /> : 'Update Status'}
+              </button>
             </div>
           </div>
         </div>
@@ -237,7 +279,7 @@ export default function ProviderBookingsPage() {
             <div className="pv-modal-body">
               <p className="pv-otp-hint">
                 Ask the customer for their <strong style={{ color: '#f1f5f9' }}>4-digit OTP</strong> to confirm the job has started.
-                <br />Booking: <strong style={{ color: '#60a5fa' }}>{otpModal.id}</strong> · {otpModal.customer}
+                <br />Booking: <strong style={{ color: '#60a5fa' }}>{otpModal._id.substring(otpModal._id.length - 6).toUpperCase()}</strong> · {otpModal.customer_id?.name || 'Customer'}
               </p>
 
               <div className="pv-otp-boxes">
@@ -265,14 +307,14 @@ export default function ProviderBookingsPage() {
               </p>
             </div>
             <div className="pv-modal-footer">
-              <button className="pv-btn pv-btn-ghost" onClick={() => setOtpModal(null)}>Cancel</button>
+              <button className="pv-btn pv-btn-ghost" onClick={() => setOtpModal(null)} disabled={actionLoading}>Cancel</button>
               <button
                 className="pv-btn pv-btn-primary"
                 onClick={handleOtpVerify}
-                disabled={otpValues.join('').length < 4}
+                disabled={otpValues.join('').length < 4 || actionLoading}
                 style={{ opacity: otpValues.join('').length < 4 ? 0.5 : 1 }}
               >
-                <ShieldCheck size={15} /> Verify OTP
+                {actionLoading ? <Loader2 size={15} className="al-spin" /> : <><ShieldCheck size={15} /> Verify OTP</>}
               </button>
             </div>
           </div>

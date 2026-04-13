@@ -6,9 +6,9 @@ import Header from '@/components/Header/Header';
 import Footer from '@/components/Footer/Footer';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
-import { useUserStore } from '@/store/userStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import styles from './Booking.module.css';
-import '../shared.css';
+import '../../shared.css';
 
 export default function BookingPage() {
   const params = useParams();
@@ -18,7 +18,7 @@ export default function BookingPage() {
   const serviceId = params.serviceId as string;
   const providerId = searchParams.get('provider');
 
-  const { isAuthenticated, isLoading } = useUserStore();
+  const { user, isLoading } = useAuthStore();
 
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
@@ -26,11 +26,11 @@ export default function BookingPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!isLoading && !user) {
       toast.error('You must be logged in to book an expert.');
       router.push('/login');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [user, isLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +60,7 @@ export default function BookingPage() {
     }
   };
 
-  if (isLoading || !isAuthenticated) return <div className="pageContainer"><div className="loader">Authenticating...</div></div>;
+  if (isLoading || !user) return <div className="pageContainer"><div className="loader">Authenticating...</div></div>;
 
   return (
     <>

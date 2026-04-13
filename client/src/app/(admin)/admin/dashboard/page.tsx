@@ -8,7 +8,7 @@ import {
   Star,
   TrendingUp,
   TrendingDown,
-  Wrench,
+  ShieldCheck,
   Clock,
   Loader2,
 } from 'lucide-react';
@@ -20,30 +20,47 @@ import { containerVariants, fadeUpVariant } from '@/lib/animations';
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState({
-    customers: [],
-    providers: [],
-    bookings: [],
-    serviceProviders: [],
+    admins: [] as any[],
+    customers: [] as any[],
+    providers: [] as any[],
+    bookings: [] as any[],
+    serviceProviders: [] as any[],
+    ratings: [] as any[],
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [customers, providers, serviceProviders, bookings] = await Promise.all([
-          adminApi.getCustomers(),
-          adminApi.getProviders(),
-          adminApi.getServiceProviders(),
-          adminApi.getBookings(),
-        ]);
-        
+        const [admins, customers, providers, serviceProviders, bookings, ratings] =
+          await Promise.allSettled([
+            adminApi.getAdmins(),
+            adminApi.getCustomers(),
+            adminApi.getProviders(),
+            adminApi.getServiceProviders(),
+            adminApi.getBookings(),
+            adminApi.getRatings(),
+          ]);
+
+        // Use allSettled so one failure doesn't block everything
+        const resolve = (r: PromiseSettledResult<any>) =>
+          r.status === 'fulfilled' ? r.value?.data || [] : [];
+
         setData({
-          customers: customers.data || [],
-          providers: providers.data || [],
-          serviceProviders: serviceProviders.data || [],
-          bookings: bookings.data || [],
+          admins: resolve(admins),
+          customers: resolve(customers),
+          providers: resolve(providers),
+          serviceProviders: resolve(serviceProviders),
+          bookings: resolve(bookings),
+          ratings: resolve(ratings),
         });
-      } catch (error) {
+
+        // Toast only if a call truly failed
+        const failed = [admins, customers, providers, serviceProviders, bookings, ratings].filter(
+          (r) => r.status === 'rejected'
+        );
+        if (failed.length > 0) toast.error('Some data failed to load');
+      } catch {
         toast.error('Failed to load dashboard data');
       } finally {
         setLoading(false);
@@ -62,46 +79,44 @@ export default function AdminDashboardPage() {
     );
   }
 
-  // Calculate dynamic stats
-  const activeProvidersCount = data.providers.filter((p: any) => p.isAvailable).length;
-  // Hardcoded rating since rating endpoint was not requested. Can evolve later.
-  const averageRating = "4.8";
+  const avgRating =
+    data.ratings.length > 0
+      ? (data.ratings.reduce((s: number, r: any) => s + (r.rating || 0), 0) / data.ratings.length).toFixed(1)
+      : '—';
 
   const stats = [
-    { label: 'Total Customers',  value: data.customers.length.toString(), change: '+12%', trend: 'up',   icon: Users,        accent: 'blue'   },
-    { label: 'Total Providers', value: data.providers.length.toString(), change: '+5%',  trend: 'up',   icon: UserCheck,    accent: 'green'  },
-    { label: 'Total Bookings',   value: data.bookings.length.toString(), change: '+18%', trend: 'up',   icon: CalendarDays, accent: 'orange' },
-    { label: 'Average Rating',   value: averageRating,   change: '-0.1', trend: 'down', icon: Star,         accent: 'purple' },
+    { label: 'Total Customers', value: data.customers.length.toString(), change: '+12%', trend: 'up',   icon: Users,       accent: 'blue'   },
+    { label: 'Total Providers', value: data.providers.length.toString(), change: '+5%',  trend: 'up',   icon: UserCheck,   accent: 'green'  },
+    { label: 'Total Bookings',  value: data.bookings.length.toString(),  change: '+18%', trend: 'up',   icon: CalendarDays,accent: 'orange' },
+    { label: 'Avg Rating',      value: avgRating,                        change: 'live', trend: 'up',   icon: Star,        accent: 'purple' },
   ];
 
-  // Map backend bookings structure
   const recentBookings = [...data.bookings]
     .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5)
     .map((b: any) => ({
-      id: b._id.substring(b._id.length - 6).toUpperCase(),
+      id:       b._id.slice(-6).toUpperCase(),
       customer: b.customer_id?.name || 'Unknown',
-      service: b.service_provider_id?.service_id?.service_name || 'Booked Service',
-      status: b.status,
-      date: new Date(b.scheduled_date || b.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      service:  b.service_provider_id?.service_id?.service_name || 'Service',
+      status:   b.status,
+      date:     new Date(b.scheduled_date || b.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     }));
 
-  // Mock activity since it's an aggregation not explicitly defined by standard routes
   const recentActivity = [
     { text: <><strong>System</strong> loaded fresh analytics data</>, time: 'Just now', dot: 'green' },
     { text: <><strong>{data.bookings.length} Bookings</strong> currently tracked</>, time: 'Live', dot: 'blue' },
     { text: <><strong>{data.customers.length} Customers</strong> have registered</>, time: 'Live', dot: 'purple' },
+    { text: <><strong>{data.admins.length} Admins</strong> in system</>, time: 'Live', dot: 'green' },
   ];
 
-  // Filter pending service providers
   const pendingProviders = data.serviceProviders
     .filter((sp: any) => sp.status === 'pending')
     .slice(0, 4)
     .map((sp: any) => ({
-      name: sp.provider_id?.name || 'Unknown Provider',
+      name:    sp.provider_id?.name || 'Unknown Provider',
       service: sp.service_id?.service_name || 'Unknown Service',
-      date: new Date(sp.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      id: sp._id
+      date:    new Date(sp.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      id:      sp._id,
     }));
 
   return (
@@ -121,7 +136,7 @@ export default function AdminDashboardPage() {
                 <s.icon size={22} />
               </div>
               <span className={`stat-card-change ${s.trend}`}>
-                {s.trend === 'up' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                <TrendingUp size={12} />
                 {s.change}
               </span>
             </div>
@@ -131,9 +146,21 @@ export default function AdminDashboardPage() {
         ))}
       </div>
 
+      {/* Admins count mini-card */}
+      <motion.div variants={fadeUpVariant} style={{ marginBottom: 28 }}>
+        <div className="data-card" style={{ display: 'inline-flex', alignItems: 'center', gap: 14, padding: '14px 22px' }}>
+          <div className="stat-card-icon blue" style={{ width: 36, height: 36, borderRadius: 10 }}>
+            <ShieldCheck size={18} />
+          </div>
+          <div>
+            <p style={{ fontSize: 20, fontWeight: 700, color: '#f1f5f9', lineHeight: 1 }}>{data.admins.length}</p>
+            <p style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>Registered Admins</p>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Main Content Grid */}
       <div className="dashboard-grid">
-
         {/* Recent Bookings Table */}
         <motion.div variants={fadeUpVariant} className="data-card">
           <div className="data-card-header">
@@ -154,7 +181,7 @@ export default function AdminDashboardPage() {
             </thead>
             <tbody>
               {recentBookings.length === 0 ? (
-                <tr><td colSpan={5} style={{textAlign:'center', color:'#64748b'}}>No recent bookings found</td></tr>
+                <tr><td colSpan={5} style={{ textAlign: 'center', color: '#64748b' }}>No recent bookings found</td></tr>
               ) : recentBookings.map((row) => (
                 <tr key={row.id}>
                   <td style={{ color: '#eb5e28', fontWeight: 600, fontFamily: 'monospace' }}>{row.id}</td>
@@ -179,7 +206,6 @@ export default function AdminDashboardPage() {
 
         {/* Right Column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
           {/* Activity Feed */}
           <motion.div variants={fadeUpVariant} className="data-card">
             <div className="data-card-header">
@@ -227,16 +253,11 @@ export default function AdminDashboardPage() {
                       <p style={{ fontSize: 12, color: '#64748b' }}>{p.service}</p>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span style={{ fontSize: 11, color: '#4a5568', marginRight: 4 }}>{p.date}</span>
-                    <button className="btn btn-success btn-sm">Approve</button>
-                    <button className="btn btn-danger btn-sm">Reject</button>
-                  </div>
+                  <span style={{ fontSize: 11, color: '#4a5568' }}>{p.date}</span>
                 </div>
               ))}
             </div>
           </motion.div>
-
         </div>
       </div>
     </motion.div>

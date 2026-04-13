@@ -14,7 +14,11 @@ class AdminAuthController {
 
     async adminRegister(req, res) {
         try {
-            const { user_name, user_email, user_password } = req.body;
+            const { 
+                user_name, user_email, user_password,
+                first_name, middle_name, last_name, phone_number,
+                office_address, company_email, services_overview, establishment_date
+            } = req.body;
 
             if (!user_name || !user_email || !user_password) {
                 return res.status(StatusCode.NOT_FOUND).json({
@@ -23,7 +27,7 @@ class AdminAuthController {
                 });
             }
 
-            const { data, error } = checkAdminValidate.validate({ user_name, user_email, user_password });
+            const { data, error } = checkAdminValidate.validate(req.body);
 
             if (error) {
                 return res.status(StatusCode.BAD_REQUEST).json({
@@ -44,7 +48,19 @@ class AdminAuthController {
             const hashPassword = bcrypt.hashSync(user_password, salt);
             const otp = generateOTP();
 
-            const adminObj = new adminModel({ user_name, user_email, user_password: hashPassword, user_role: "admin" });
+            // Handle optional files if Upload middleware was used
+            let profile_img, signature_img;
+            if (req.files) {
+                if (req.files.profile_img) profile_img = req.files.profile_img[0].path;
+                if (req.files.signature_img) signature_img = req.files.signature_img[0].path;
+            }
+
+            const adminObj = new adminModel({ 
+                user_name, user_email, user_password: hashPassword, user_role: "admin",
+                first_name, middle_name, last_name, phone_number,
+                office_address, company_email, services_overview, establishment_date,
+                profile_img, signature_img
+            });
             const admin = await adminObj.save();
 
             const otpObj = new otpModel({ userId: admin._id, otp });

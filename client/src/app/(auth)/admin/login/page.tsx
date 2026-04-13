@@ -6,8 +6,6 @@ import toast from 'react-hot-toast';
 import { Eye, EyeOff, Loader2, ShieldCheck, BarChart3, Users, CheckCircle, Calendar } from 'lucide-react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import api from '@/lib/api';
-import Cookies from 'js-cookie';
 import { useAuthStore } from '@/store/useAuthStore';
 import './admin-login.css';
 
@@ -128,10 +126,7 @@ export default function AdminLoginPage() {
 
           <div className="al-divider" />
           <p className="al-footer">
-            Not an admin?&nbsp;
-            <a href="/login" className="al-link">Customer Login</a>
-            <span style={{ color: '#334155', margin: '0 6px' }}>·</span>
-            <a href="/provider/login" className="al-link">Provider Login</a>
+            <a href="/admin" className="al-link">← Return to Admin Home</a>
           </p>
         </motion.div>
       </div>

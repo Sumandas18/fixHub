@@ -37,7 +37,9 @@ const checkCreateProviderValidate = JOI.object({
             "string.pattern.base": "Contact must be a 10-digit number"
         }),
 
-    user_address: addressSchema.required()
+    user_address: addressSchema.optional(),
+    service_id: JOI.string().optional(),
+    experience: JOI.string().optional()
 });
 
 module.exports = checkCreateProviderValidate;

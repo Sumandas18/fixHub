@@ -2,15 +2,23 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
-import { Search, Briefcase, CalendarDays, User, LogOut, Home, ChevronDown } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Search, CalendarDays, User, LogOut, Home, ChevronDown } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import Cookies from 'js-cookie';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function UserNavbar() {
-  const pathname = usePathname();
+  const pathname   = usePathname();
+  const router     = useRouter();
+  const { user, logout } = useAuthStore();
+
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Derived display values from Zustand store
+  const displayName  = user?.name  || user?.user_name  || 'User';
+  const displayEmail = user?.email || user?.user_email || '';
+  const displayInitial = (displayName[0] || 'U').toUpperCase();
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -23,15 +31,14 @@ export default function UserNavbar() {
   }, []);
 
   const handleLogout = () => {
-    Cookies.remove('token');
-    Cookies.remove('role');
-    window.location.href = '/login';
+    logout();
+    router.push('/login');
   };
 
   const navLinks = [
-    { label: 'Browse',   href: '/user/dashboard', icon: Home },
-    { label: 'Bookings', href: '/user/bookings',  icon: CalendarDays },
-    { label: 'Profile',  href: '/user/profile',   icon: User },
+    { label: 'Dashboard', href: '/user/dashboard', icon: Home },
+    { label: 'My Bookings', href: '/user/bookings',  icon: CalendarDays },
+    { label: 'Profile',    href: '/user/profile',    icon: User },
   ];
 
   return (
@@ -66,15 +73,15 @@ export default function UserNavbar() {
             className="usr-avatar-btn"
             onClick={() => setDropdownOpen(!dropdownOpen)}
           >
-            R
+            {displayInitial}
             <ChevronDown size={10} style={{ position: 'absolute', bottom: -2, right: -2, background: '#161b27', borderRadius: '50%' }} />
           </button>
 
           {dropdownOpen && (
             <div className="usr-dropdown">
               <div className="usr-dropdown-user">
-                <p className="usr-dropdown-name">Rahul Sharma</p>
-                <p className="usr-dropdown-email">rahul@example.com</p>
+                <p className="usr-dropdown-name">{displayName}</p>
+                <p className="usr-dropdown-email">{displayEmail}</p>
               </div>
               <Link href="/user/profile" className="usr-dropdown-item" onClick={() => setDropdownOpen(false)}>
                 <User size={15} /> My Profile

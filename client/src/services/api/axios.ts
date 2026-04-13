@@ -1,5 +1,4 @@
 import axios from 'axios';
-import Cookies from 'js-cookie';
 
 // The base URL can be defined in .env.local as NEXT_PUBLIC_API_URL
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -11,37 +10,41 @@ export const apiClient = axios.create({
   },
 });
 
-// Request Interceptor: Attach JWT Token from cookies
+// ── Helper: read JWT from Zustand's localStorage key ────────────────────────
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('auth-storage');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.state?.token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// ── Request interceptor: attach token to every request ──────────────────────
 apiClient.interceptors.request.use(
   (config) => {
-    // Read the token from cookies. This works because we use js-cookie 
-    // and don't strictly enforce HttpOnly for the token itself, 
-    // allowing the client-side axios to attach it to requests sent to the backend.
-    const token = Cookies.get('token');
+    const token = getToken();
     if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers.authorization = token;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Global Error Handling
+// ── Response interceptor: role-aware 401 redirect ───────────────────────────
 apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   (error) => {
-    // Add logic here for token expiration (e.g., 401 status)
     if (error.response?.status === 401) {
-      Cookies.remove('token');
-      Cookies.remove('role');
-      // Optionally handle full redirect to login if not already there, 
-      // though typically handled at the application level via Zustand or route wrapper.
       if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+        localStorage.removeItem('auth-storage');
+        // Redirect to the correct login page based on which panel the user is in
+        const isAdminRoute = window.location.pathname.startsWith('/admin');
+        window.location.href = isAdminRoute ? '/admin/login' : '/login';
       }
     }
     return Promise.reject(error);

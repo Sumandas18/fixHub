@@ -2,10 +2,7 @@ import { apiClient } from './axios';
 
 export const userApi = {
   getProfile: async () => {
-    // Actually the customer profile is already being fetched in useUserStore or via authApi
-    // Let's use the explicit route. 
-    // BUT wait, customerRoute doesn't have a specific GET /profile route defined there. The profile logic is usually part of auth context.
-    const res = await apiClient.get('/customer/profile');
+    const res = await apiClient.get('/user/profile');
     return res.data;
   },
   getBookings: async () => {

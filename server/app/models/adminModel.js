@@ -24,6 +24,16 @@ const adminSchema = new Schema(
             default: "admin",
             required: true
         },
+        first_name: { type: String },
+        middle_name: { type: String },
+        last_name: { type: String },
+        phone_number: { type: String },
+        office_address: { type: String },
+        company_email: { type: String },
+        services_overview: { type: String },
+        establishment_date: { type: String },
+        profile_img: { type: String },
+        signature_img: { type: String },
         isVerified: {
             type: Boolean,
             default: false

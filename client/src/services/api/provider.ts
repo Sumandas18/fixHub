@@ -12,7 +12,6 @@ export const providerApi = {
     return res.data;
   },
   getServices: async () => {
-    // Fetches the specific services the provider owns
     const res = await apiClient.get('/service-provider');
     return res.data;
   },

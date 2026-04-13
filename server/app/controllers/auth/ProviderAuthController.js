@@ -15,12 +15,12 @@ class ProviderAuthController {
 
     async providerRegister(req, res) {
         try {
-            const { user_name, user_email, user_password, user_contact, user_address } = req.body;
+            const { user_name, user_email, user_password, user_contact, service_id, experience, user_address } = req.body;
 
-            if (!user_name || !user_email || !user_password) {
+            if (!user_name || !user_email || !user_password || !service_id || !req.file) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
-                    message: "All required fields must be filled",
+                    message: "All required fields must be filled (including Profile Image and Service)",
                 });
             }
 
@@ -46,15 +46,38 @@ class ProviderAuthController {
             const hashedPassword = bcrypt.hashSync(user_password, salt);
             const otp = generateOTP();
 
+            // Default Mock Addr if not provided via UI
+            const defaultAddr = user_address || {
+                houseOrFlatNo: "1",
+                street: "Unknown",
+                area: "Unknown",
+                city: "Unknown",
+                state: "Unknown",
+                pinCode: "000000",
+                country: "India"
+            };
+
             const provider = await userModel.create({
                 user_name,
                 user_email,
                 user_password: hashedPassword,
                 user_contact,
                 user_role: "provider",
-                doc_url: req.file ? req.file.path : null,
-                user_address,
+                doc_url: req.file.path,
+                user_address: defaultAddr,
             });
+
+            // Create serviceProviderModel securely
+            const spDoc = new serviceProviderModel({
+                provider_id: provider._id,
+                service_id: service_id,
+                service_area_zip: ["000000"],
+                profile_img: req.file.filename,
+                profile_img_url: req.file.path,
+                experience: experience || "N/A",
+                charges_per_hour: "0"
+            });
+            await spDoc.save();
 
             const otpObj = new otpModel({ userId: provider._id, otp });
             await otpObj.save();

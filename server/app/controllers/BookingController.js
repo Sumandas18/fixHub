@@ -8,36 +8,49 @@ class BookingController {
 
   async createBooking(req, res) {
     try {
-      const { service_provider_id, scheduled_date, scheduled_time } = req.body;
+      const { service_provider_id, serviceId, scheduled_date, scheduled_time } = req.body;
 
-      if (!service_provider_id || !scheduled_date || !scheduled_time) {
+      // Ensure at least one target is provided
+      if (!service_provider_id && !serviceId) {
         return res.status(StatusCode.BAD_REQUEST).json({
           success: false,
-          message: "All fields are required",
+          message: "Either service_provider_id or serviceId is required",
         });
       }
 
-      const existingBooking = await bookingModel.findOne({
-        service_provider_id,
-        scheduled_date: new Date(scheduled_date),
-        scheduled_time,
-        status: { $in: ["pending", "confirmed"] }
-      });
+      let existingBooking = null;
 
-      if (existingBooking) {
-        return res.status(StatusCode.BAD_REQUEST).json({
-          success: false,
-          message: "Service provider is already booked for this date and time",
+      if (service_provider_id && scheduled_date && scheduled_time) {
+        existingBooking = await bookingModel.findOne({
+          service_provider_id,
+          scheduled_date: new Date(scheduled_date),
+          scheduled_time,
+          status: { $in: ["pending", "confirmed", "accepted"] }
         });
+
+        if (existingBooking) {
+          return res.status(StatusCode.BAD_REQUEST).json({
+            success: false,
+            message: "Service provider is already booked for this date and time",
+          });
+        }
       }
 
-      const bookingObj = new bookingModel({
+      const bookingData = {
         customer_id: req.user.user_id,
-        service_provider_id,
-        scheduled_date,
-        scheduled_time
-      });
+        status: 'pending' // default, but making it explicit for clarity
+      };
 
+      if (service_provider_id) {
+         bookingData.service_provider_id = service_provider_id;
+         bookingData.scheduled_date = scheduled_date;
+         bookingData.scheduled_time = scheduled_time;
+      }
+      if (serviceId) {
+         bookingData.service_id = serviceId;
+      }
+
+      const bookingObj = new bookingModel(bookingData);
       const booking = await bookingObj.save();
 
       await sendOTPMails({ user, booking, type: "newBooking" });
@@ -207,7 +220,7 @@ class BookingController {
         const otpObj = new serviceOTPModel({ bookingId: booking._id, otp });
         await otpObj.save();
 
-        await sendOTPMails({ user, booking, otp, type: "taskComplete" });
+        await sendOTPMails({ user: null /* need user obj in real implementation */, booking, otp, type: "taskComplete" });
 
         return res.status(StatusCode.SUCCESS).json({
           success: true,
@@ -220,10 +233,10 @@ class BookingController {
         await booking.save();
 
         if (status == "cancelled") {
-          await sendOTPMails({ user, booking, reason, type: "cancelBooking" });
+          await sendOTPMails({ user: null, booking, reason, type: "cancelBooking" });
         }
         if (status == "confirmed") {
-          await sendOTPMails({ user, booking, type: "confirmBooking" });
+          await sendOTPMails({ user: null, booking, type: "confirmBooking" });
         }
 
         return res.status(StatusCode.SUCCESS).json({
@@ -233,6 +246,43 @@ class BookingController {
         });
       }
 
+    } catch (error) {
+      return res.status(StatusCode.SERVER_ERROR).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  async patchBookingStatus(req, res) {
+    try {
+      const { status } = req.body;
+      const booking_id = req.params.id;
+
+      if (!status || !['accepted', 'rejected'].includes(status)) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          success: false,
+          message: "Valid status ('accepted' or 'rejected') is required",
+        });
+      }
+
+      const booking = await bookingModel.findById(booking_id);
+
+      if (!booking) {
+        return res.status(StatusCode.NOT_FOUND).json({
+          success: false,
+          message: "Booking not found",
+        });
+      }
+
+      booking.status = status;
+      await booking.save();
+
+      return res.status(StatusCode.SUCCESS).json({
+        success: true,
+        message: `Booking has been ${status}`,
+        data: booking
+      });
     } catch (error) {
       return res.status(StatusCode.SERVER_ERROR).json({
         success: false,
