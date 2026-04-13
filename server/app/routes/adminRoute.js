@@ -33,7 +33,8 @@
 const express = require("express");
 
 const AdminAuthController = require("../controllers/auth/AdminAuthController");
-const adminController = require("../controllers/AdminController");
+const adminController = require("../controllers/adminController");
+const userController = require("./../controllers/userController");
 const userAuthCheck = require("../middleware/userAuthCheck");
 
 const Router = express.Router();

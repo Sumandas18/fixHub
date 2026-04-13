@@ -5,7 +5,7 @@ module.exports = (user, otp) => {
 
             <!-- Header -->
             <div style="background:linear-gradient(135deg,#2563eb,#7c3aed); padding:24px; text-align:center;">
-                <h2 style="color:#ffffff; margin:0;">Welcome to Fixhub 🎉</h2>
+                <h2 style="color:#ffffff; margin:0;">Welcome to Fixhub</h2>
                 <p style="color:#e0e7ff; margin-top:6px; font-size:14px;">
                     Verify your email to get started
                 </p>

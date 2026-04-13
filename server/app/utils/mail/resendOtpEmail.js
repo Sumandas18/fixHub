@@ -5,7 +5,7 @@ module.exports = (user, otp) => {
 
             <!-- Header -->
             <div style="background:linear-gradient(135deg,#dc2626,#f97316); padding:24px; text-align:center;">
-                <h2 style="color:#ffffff; margin:0;">OTP Resent 🔁</h2>
+                <h2 style="color:#ffffff; margin:0;">OTP Resent</h2>
                 <p style="color:#ffedd5; margin-top:6px; font-size:14px;">
                     Use the new OTP to verify your email
                 </p>
