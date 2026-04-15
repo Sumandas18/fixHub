@@ -17,7 +17,6 @@ class ProviderAuthController {
         try {
             const { user_name, user_email, user_password, user_contact } = req.body;
 
-            // Document is required during signup
             if (!user_name || !user_email || !user_password || !user_contact) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
@@ -37,8 +36,7 @@ class ProviderAuthController {
             if (error) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
-                    message: error.details.map((err) => err.message),
-                    message: "Name, email, password, and contact are required",
+                    message: error.details.map((err) => err.message)
                 });
             }
 

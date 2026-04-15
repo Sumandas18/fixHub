@@ -259,7 +259,7 @@ export default function RegisterPage() {
             {role === 'provider' && (
               <motion.div custom={5} variants={fadeUp} initial="hidden" animate="visible">
                 <label style={labelStyle}>ID Document / Legal Proof <span style={{ color: '#ef4444' }}>*</span></label>
-                <input type="file" required ref={fileRef} hidden accept="image/*,application/pdf" onChange={handleFileChange} />
+                <input type="file" ref={fileRef} hidden accept="application/pdf" onChange={handleFileChange} />
                 <div onClick={() => fileRef.current?.click()} style={{ ...inp(focused === 'doc', accent), padding: '20px', textAlign: 'center', cursor: 'pointer', borderStyle: 'dashed' }}>
                   {documentFile ? (
                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
@@ -270,8 +270,8 @@ export default function RegisterPage() {
                   ) : (
                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                        <UploadCloud size={28} color="#64748b" />
-                       <span style={{ fontSize: 13, color: '#94a3b8' }}>Upload Driver's License, Aadhaar, or Business PDF</span>
-                       <span style={{ fontSize: 11, color: '#64748b' }}>(Max 5MB)</span>
+                       <span style={{ fontSize: 13, color: '#94a3b8' }}>Upload provider's License, Aadhaar, or Business PDF</span>
+                       <span style={{ fontSize: 11, color: '#64748b' }}>(Max 3MB)</span>
                      </div>
                   )}
                 </div>
