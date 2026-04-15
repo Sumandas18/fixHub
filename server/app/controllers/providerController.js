@@ -8,14 +8,12 @@ class ProviderController {
 
   async getAllProvider(req, res) {
     try {
-
-      // const providers = await userModel.find({ user_role: "provider" });
-
+      // ── STEP 5 FIX: Only show providers who have completed their profile ──
+      // Providers with isProfileCompleted = false are hidden from admin panel
+      // until they submit their service/experience/rates via "Complete Profile"
       const providers = await userModel.aggregate([
         {
-          $match: {
-            user_role: "provider"
-          }
+          $match: { user_role: "provider" }
         },
         {
           $lookup: {
@@ -27,6 +25,10 @@ class ProviderController {
         },
         {
           $unwind: "$service"
+        },
+        {
+          // Only include providers who have completed their profile
+          $match: { "service.isProfileCompleted": true }
         }
       ]);
 
@@ -37,8 +39,7 @@ class ProviderController {
         data: providers
       });
 
-    }
-    catch (error) {
+    } catch (error) {
       return res.status(StatusCode.SERVER_ERROR).json({
         success: false,
         message: error.message,
@@ -57,7 +58,6 @@ class ProviderController {
       }
 
       const provider = await userModel.findById(providerId);
-
       if (!provider) {
         return res.status(StatusCode.NOT_FOUND).json({
           success: false,
@@ -65,14 +65,16 @@ class ProviderController {
         });
       }
 
+      // Also fetch service-provider profile
+      const spProfile = await serviceProviderModel.findOne({ provider_id: providerId }).populate('service_id');
+
       return res.status(StatusCode.SUCCESS).json({
         success: true,
         message: "Specific provider details",
-        data: provider
+        data: { ...provider.toObject(), serviceProfile: spProfile }
       });
 
-    }
-    catch (error) {
+    } catch (error) {
       return res.status(StatusCode.SERVER_ERROR).json({
         success: false,
         message: error.message,
@@ -84,7 +86,7 @@ class ProviderController {
     try {
       const providerId = req.params.id;
 
-      if (req.user.user_role !== "provider" || req.user._id.toString() !== providerId) {
+      if (req.user.user_role !== "provider" || req.user.user_id.toString() !== providerId) {
         return res.status(StatusCode.FORBIDDEN).json({
           success: false,
           message: "Unauthorized",
@@ -92,7 +94,6 @@ class ProviderController {
       }
 
       const { data, error } = checkUpdateProviderValidate.validate(req.body);
-
       if (error) {
         return res.status(StatusCode.BAD_REQUEST).json({
           success: false,
@@ -100,16 +101,14 @@ class ProviderController {
         });
       }
 
-      const updatedProvider = await userModel.findByIdAndUpdate(
-        providerId, req.body, { new: true, runValidators: true });
+      await userModel.findByIdAndUpdate(providerId, req.body, { new: true, runValidators: true });
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,
         message: "Updated successfully"
       });
 
-    }
-    catch (error) {
+    } catch (error) {
       return res.status(StatusCode.SERVER_ERROR).json({
         success: false,
         message: error.message,
@@ -127,10 +126,7 @@ class ProviderController {
         });
       }
 
-      if (
-        req.user.user_role !== "provider" ||
-        req.user._id.toString() !== providerId
-      ) {
+      if (req.user.user_role !== "admin" && req.user.user_id.toString() !== providerId) {
         return res.status(StatusCode.FORBIDDEN).json({
           success: false,
           message: "Unauthorized",
@@ -138,14 +134,14 @@ class ProviderController {
       }
 
       await userModel.findByIdAndDelete(providerId);
+      await serviceProviderModel.deleteMany({ provider_id: providerId });
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,
         message: "Provider deleted successfully",
       });
 
-    }
-    catch (error) {
+    } catch (error) {
       return res.status(StatusCode.SERVER_ERROR).json({
         success: false,
         message: error.message,
@@ -156,7 +152,6 @@ class ProviderController {
   async approveProvider(req, res) {
     try {
       const statusType = ["approved", "rejected"];
-
       const providerId = req.params.id;
       const status = req.params.status;
 
@@ -175,7 +170,7 @@ class ProviderController {
       }
 
       const user = await userModel.findById(providerId);
-      const provider = await serviceProviderModel.findOne({ provider_id: user._id })
+      const provider = await serviceProviderModel.findOne({ provider_id: user._id });
 
       if (!user || user.user_role !== "provider" || !provider) {
         return res.status(StatusCode.NOT_FOUND).json({
@@ -187,15 +182,15 @@ class ProviderController {
       provider.status = status;
       await provider.save();
 
-      await sendOTPMails({ user: provider, provider: { ...provider, status }, type: "providerStatus" });
+      // Non-blocking email
+      sendOTPMails({ user, provider: { ...provider.toObject(), status }, type: "providerStatus" }).catch(console.error);
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,
         message: `Provider ${status} successfully`
       });
 
-    }
-    catch (error) {
+    } catch (error) {
       return res.status(StatusCode.SERVER_ERROR).json({
         success: false,
         message: error.message
@@ -206,16 +201,14 @@ class ProviderController {
   async availableUnavailableProvider(req, res) {
     try {
       const providerId = req.params.id;
-
       if (!providerId) {
         return res.status(StatusCode.NOT_FOUND).json({
           success: false,
           message: "Provider ID is required"
-        })
+        });
       }
 
       const provider = await userModel.findById(providerId);
-
       if (!provider) {
         return res.status(StatusCode.NOT_FOUND).json({
           success: false,
@@ -238,8 +231,7 @@ class ProviderController {
         message: `Provider is ${provider.isAvailable ? "available" : "unavailable"}`
       });
 
-    }
-    catch (error) {
+    } catch (error) {
       return res.status(StatusCode.SERVER_ERROR).json({
         success: false,
         message: error.message
@@ -279,8 +271,8 @@ class ProviderController {
       provider.status = status;
       await provider.save();
 
-      // We can also trigger the approval logic if we want, similar to approveProvider
-      await sendOTPMails({ user: provider, provider: { ...provider.toObject(), status }, type: "providerStatus" });
+      // Non-blocking email
+      sendOTPMails({ user, provider: { ...provider.toObject(), status }, type: "providerStatus" }).catch(console.error);
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,
@@ -288,8 +280,7 @@ class ProviderController {
         data: provider
       });
 
-    }
-    catch (error) {
+    } catch (error) {
       return res.status(StatusCode.SERVER_ERROR).json({
         success: false,
         message: error.message

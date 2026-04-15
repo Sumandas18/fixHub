@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, ShieldCheck, RefreshCw, ChevronDown, Loader2 } from 'lucide-react';
+import { X, ShieldCheck, RefreshCw, ChevronDown, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import { scaleUpVariant } from '@/lib/animations';
 
-const STATUS_OPTIONS = ['confirmed', 'in-progress', 'completed', 'cancelled'];
+const STATUS_OPTIONS = ['confirmed', 'in-progress', 'cancelled'];
 const TABS = ['All', 'Pending', 'Accepted', 'Confirmed', 'In-Progress', 'Completed', 'Cancelled'];
 
 type Booking = any;
@@ -14,20 +16,26 @@ export default function ProviderBookingsPage() {
   const [bookings, setBookings]         = useState<any[]>([]);
   const [loading, setLoading]           = useState(true);
   const [activeTab, setActiveTab]       = useState('All');
+  
+  // Modals
   const [statusModal, setStatusModal]   = useState<Booking | null>(null);
   const [otpModal, setOtpModal]         = useState<Booking | null>(null);
+  const [rejectModal, setRejectModal]   = useState<Booking | null>(null);
+
+  // Form states
   const [selectedStatus, setSelectedStatus] = useState('');
   const [reason, setReason]            = useState('');
+  const [rejectReason, setRejectReason] = useState('');
   const [otpValues, setOtpValues]      = useState(['', '', '', '']);
   const [actionLoading, setActionLoading] = useState(false);
-  const otpRefs                         = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
+  const [resendLoading, setResendLoading] = useState(false);
+
+  const otpRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
 
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const res = await api.get('/booking/provider'); // Wait, the endpoint might just be /booking for provider, actually bookingRoute.js has /provider for getProviderBookings!
-        // Admin accepts it, but if it has no provider_id assigned automatically (abstract booking) this depends on how abstract bookings are retrieved.
-        // Assuming provider only sees their assigned or broadcasted accepted ones.
+        const res = await api.get('/booking/provider');
         setBookings(res.data.data || res.data || []);
       } catch (err) {
         toast.error('Failed to load bookings');
@@ -38,11 +46,11 @@ export default function ProviderBookingsPage() {
     fetchBookings();
   }, []);
 
-  // Show all bookings — provider needs to see pending ones to accept/reject
   const filtered = activeTab === 'All'
     ? bookings
     : bookings.filter((b) => b.status === activeTab.toLowerCase());
 
+  /* ── Status Modal ── */
   const openStatusModal = (b: Booking) => {
     setSelectedStatus(b.status === 'accepted' ? 'confirmed' : b.status);
     setReason('');
@@ -55,7 +63,7 @@ export default function ProviderBookingsPage() {
     try {
       await api.put(`/booking/status/${statusModal._id}`, { status: selectedStatus, reason });
       setBookings((prev) =>
-        prev.map((b) => b._id === statusModal?._id ? { ...b, status: selectedStatus } : b)
+        prev.map((b) => b._id === statusModal._id ? { ...b, status: selectedStatus } : b)
       );
       toast.success('Status updated successfully');
       setStatusModal(null);
@@ -66,21 +74,57 @@ export default function ProviderBookingsPage() {
     }
   };
 
-  const handleAcceptReject = async (id: string, status: 'accepted' | 'rejected') => {
+  /* ── Mark Complete -> triggers OTP ── */
+  const handleMarkComplete = async (b: Booking) => {
     setActionLoading(true);
     try {
-      await api.patch(`/booking/${id}`, { status });
-      setBookings((prev) =>
-        prev.map((b) => b._id === id ? { ...b, status } : b)
-      );
-      toast.success(`Booking ${status} successfully`);
+      // Backend generates and sends OTP
+      await api.put(`/booking/status/${b._id}`, { status: 'completed' });
+      toast.success('OTP sent to customer');
+      openOtpModal(b);
     } catch {
-      toast.error(`Failed to ${status} booking`);
+      toast.error('Failed to mark complete');
     } finally {
       setActionLoading(false);
     }
   };
 
+  /* ── Accept / Reject ── */
+  const handleAccept = async (id: string) => {
+    setActionLoading(true);
+    try {
+      await api.patch(`/booking/${id}`, { status: 'accepted' });
+      setBookings((prev) => prev.map((b) => b._id === id ? { ...b, status: 'accepted' } : b));
+      toast.success('Booking accepted successfully');
+    } catch {
+      toast.error('Failed to accept booking');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectSubmit = async () => {
+    if (!rejectModal) return;
+    setActionLoading(true);
+    try {
+      // using PUT /booking/status for cancellation to include reason, or PATCH.
+      // The API patchBookingStatus from BookingController does not take reason,
+      // but updateBookingStatus allows 'cancelled' with reason.
+      // However, frontend originally used patch for 'rejected'.
+      // Let's use PUT /booking/status to send reason for 'cancelled' or just stick to patch and ignore reason locally.
+      // Wait, let's use PUT /booking/status/:id with {status: "cancelled", reason: rejectReason}
+      await api.put(`/booking/status/${rejectModal._id}`, { status: 'cancelled', reason: rejectReason });
+      setBookings((prev) => prev.map((b) => b._id === rejectModal._id ? { ...b, status: 'cancelled' } : b));
+      toast.success('Booking rejected');
+      setRejectModal(null);
+    } catch {
+      toast.error('Failed to reject booking');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  /* ── OTP Flow ── */
   const openOtpModal = (b: Booking) => {
     setOtpValues(['', '', '', '']);
     setOtpModal(b);
@@ -107,14 +151,27 @@ export default function ProviderBookingsPage() {
     try {
       await api.put('/booking/verify-otp', { otp, bookingId: otpModal?._id });
       setBookings((prev) =>
-        prev.map((b) => b._id === otpModal?._id ? { ...b, otp_verified: true, status: 'in-progress' } : b)
+        prev.map((b) => b._id === otpModal?._id ? { ...b, otp_verified: true, status: 'completed' } : b)
       );
-      toast.success('OTP Verified');
+      toast.success('Service Completed');
       setOtpModal(null);
-    } catch {
-      toast.error('Invalid OTP');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Invalid OTP');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!otpModal || resendLoading) return;
+    setResendLoading(true);
+    try {
+      await api.put('/booking/resend-otp', { bookingId: otpModal._id });
+      toast.success('OTP resent successfully');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to resend OTP');
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -150,20 +207,19 @@ export default function ProviderBookingsPage() {
               <th>Service</th>
               <th>Scheduled</th>
               <th>Status</th>
-              <th>OTP</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
                <tr>
-                 <td colSpan={7} style={{ textAlign: 'center', padding: 60 }}>
+                 <td colSpan={6} style={{ textAlign: 'center', padding: 60 }}>
                     <Loader2 size={28} className="al-spin" style={{ margin: '0 auto', color: '#60a5fa' }} />
                  </td>
                </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={7}>
+                <td colSpan={6}>
                   <div className="pv-empty">
                     <div className="pv-empty-icon">📅</div>
                     <p className="pv-empty-text">No bookings found for this filter.</p>
@@ -191,31 +247,22 @@ export default function ProviderBookingsPage() {
                     <span className={`pv-badge ${b.status}`}>{b.status}</span>
                   </td>
                   <td>
-                    {b.otp_verified ? (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#4ade80', fontSize: 12, fontWeight: 600 }}>
-                        <ShieldCheck size={14} /> Verified
-                      </span>
-                    ) : (
-                      <span style={{ color: '#64748b', fontSize: 12 }}>Not verified</span>
-                    )}
-                  </td>
-                  <td>
-                    <div className="pv-actions-cell">
+                    <div className="pv-actions-cell" style={{ gap: 8 }}>
                       {b.status === 'pending' ? (
                         <>
                           <button
                             className="pv-btn pv-btn-success pv-btn-sm"
-                            onClick={() => handleAcceptReject(b._id, 'accepted')}
+                            onClick={() => handleAccept(b._id)}
                             disabled={actionLoading}
                           >
-                            ✓ Accept
+                            <CheckCircle size={13} /> Accept
                           </button>
                           <button
                             className="pv-btn pv-btn-danger pv-btn-sm"
-                            onClick={() => handleAcceptReject(b._id, 'rejected')}
+                            onClick={() => { setRejectModal(b); setRejectReason(''); }}
                             disabled={actionLoading}
                           >
-                            ✗ Reject
+                            <XCircle size={13} /> Reject
                           </button>
                         </>
                       ) : (
@@ -223,16 +270,19 @@ export default function ProviderBookingsPage() {
                           <button
                             className="pv-btn pv-btn-ghost pv-btn-sm"
                             onClick={() => openStatusModal(b)}
-                            disabled={b.status === 'completed' || b.status === 'rejected'}
+                            disabled={b.status === 'completed' || b.status === 'cancelled' || b.status === 'rejected'}
                           >
                             <ChevronDown size={13} /> Status
                           </button>
-                          {!b.otp_verified && b.status !== 'cancelled' && b.status !== 'completed' && b.status !== 'rejected' && (
+                          
+                          {/* Specific Complete Action */}
+                          {(b.status === 'confirmed' || b.status === 'accepted' || b.status === 'in-progress') && (
                             <button
                               className="pv-btn pv-btn-otp pv-btn-sm"
-                              onClick={() => openOtpModal(b)}
+                              onClick={() => handleMarkComplete(b)}
+                              disabled={actionLoading}
                             >
-                              <ShieldCheck size={13} /> OTP
+                              <ShieldCheck size={13} /> Mark Complete
                             </button>
                           )}
                         </>
@@ -247,112 +297,151 @@ export default function ProviderBookingsPage() {
       </div>
 
       {/* ── Status Update Modal ── */}
-      {statusModal && (
-        <div className="pv-modal-overlay" onClick={() => setStatusModal(null)}>
-          <div className="pv-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="pv-modal-header">
-              <h3 className="pv-modal-title">Update Booking Status</h3>
-              <button className="pv-modal-close" onClick={() => setStatusModal(null)}><X size={16} /></button>
-            </div>
-            <div className="pv-modal-body">
-              <div style={{ marginBottom: 10 }}>
-                <p style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>Booking</p>
-                <p style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9' }}>
-                  {statusModal._id.substring(statusModal._id.length - 6).toUpperCase()} · {statusModal.customer_id?.name || 'Customer'}
+      <AnimatePresence>
+        {statusModal && (
+          <div className="pv-modal-overlay" onClick={() => setStatusModal(null)}>
+            <motion.div variants={scaleUpVariant} initial="hidden" animate="visible" exit="hidden" className="pv-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="pv-modal-header">
+                <h3 className="pv-modal-title">Update Booking Status</h3>
+                <button className="pv-modal-close" onClick={() => setStatusModal(null)}><X size={16} /></button>
+              </div>
+              <div className="pv-modal-body">
+                <div style={{ marginBottom: 10 }}>
+                  <p style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>Booking</p>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9' }}>
+                    {statusModal._id.substring(statusModal._id.length - 6).toUpperCase()} · {statusModal.customer_id?.name || 'Customer'}
+                  </p>
+                </div>
+
+                <div className="pv-field" style={{ marginTop: 18 }}>
+                  <label className="pv-label">New Status</label>
+                  <select
+                    className="pv-select"
+                    style={{ width: '100%' }}
+                    value={selectedStatus}
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                  >
+                    {STATUS_OPTIONS.map((s) => (
+                      <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {(selectedStatus === 'cancelled') && (
+                  <div className="pv-field">
+                    <label className="pv-label">Reason (optional)</label>
+                    <textarea
+                      className="pv-input"
+                      rows={3}
+                      placeholder="Reason for cancellation..."
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      style={{ resize: 'vertical' }}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="pv-modal-footer">
+                <button className="pv-btn pv-btn-ghost" onClick={() => setStatusModal(null)} disabled={actionLoading}>Cancel</button>
+                <button className="pv-btn pv-btn-primary" onClick={handleStatusUpdate} disabled={actionLoading}>
+                  {actionLoading ? <Loader2 size={15} className="al-spin" /> : 'Update Status'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Reject Modal ── */}
+      <AnimatePresence>
+        {rejectModal && (
+          <div className="pv-modal-overlay" onClick={() => setRejectModal(null)}>
+            <motion.div variants={scaleUpVariant} initial="hidden" animate="visible" exit="hidden" className="pv-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="pv-modal-header">
+                <h3 className="pv-modal-title" style={{ color: '#f87171' }}>Reject Request</h3>
+                <button className="pv-modal-close" onClick={() => setRejectModal(null)}><X size={16} /></button>
+              </div>
+              <div className="pv-modal-body">
+                <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 16 }}>
+                  Are you sure you want to reject this booking? You can provide a reason to the customer.
                 </p>
-                <p style={{ fontSize: 13, color: '#475569' }}>{statusModal.service_id?.service_name || statusModal.service_provider_id?.service_id?.service_name || 'Booked Service'}</p>
-              </div>
-
-              <div className="pv-field" style={{ marginTop: 18 }}>
-                <label className="pv-label">New Status</label>
-                <select
-                  className="pv-select"
-                  style={{ width: '100%' }}
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                >
-                  {STATUS_OPTIONS.map((s) => (
-                    <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                  ))}
-                </select>
-              </div>
-
-              {(selectedStatus === 'cancelled') && (
                 <div className="pv-field">
-                  <label className="pv-label">Reason (optional)</label>
+                  <label className="pv-label">Reason for Rejection <span style={{ color: '#64748b', fontWeight: 400 }}>(Optional)</span></label>
                   <textarea
                     className="pv-input"
-                    rows={3}
-                    placeholder="Reason for cancellation..."
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
+                    rows={4}
+                    placeholder="E.g., Fully booked, issue out of scope..."
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
                     style={{ resize: 'vertical' }}
                   />
                 </div>
-              )}
-            </div>
-            <div className="pv-modal-footer">
-              <button className="pv-btn pv-btn-ghost" onClick={() => setStatusModal(null)} disabled={actionLoading}>Cancel</button>
-              <button className="pv-btn pv-btn-primary" onClick={handleStatusUpdate} disabled={actionLoading}>
-                {actionLoading ? <Loader2 size={15} className="al-spin" /> : 'Update Status'}
-              </button>
-            </div>
+              </div>
+              <div className="pv-modal-footer">
+                <button className="pv-btn pv-btn-ghost" onClick={() => setRejectModal(null)} disabled={actionLoading}>Cancel</button>
+                <button className="pv-btn pv-btn-danger" onClick={handleRejectSubmit} disabled={actionLoading}>
+                  {actionLoading ? <Loader2 size={15} className="al-spin" /> : 'Reject Booking'}
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* ── OTP Verify Modal ── */}
-      {otpModal && (
-        <div className="pv-modal-overlay" onClick={() => setOtpModal(null)}>
-          <div className="pv-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="pv-modal-header">
-              <h3 className="pv-modal-title">Verify Booking OTP</h3>
-              <button className="pv-modal-close" onClick={() => setOtpModal(null)}><X size={16} /></button>
-            </div>
-            <div className="pv-modal-body">
-              <p className="pv-otp-hint">
-                Ask the customer for their <strong style={{ color: '#f1f5f9' }}>4-digit OTP</strong> to confirm the job has started.
-                <br />Booking: <strong style={{ color: '#60a5fa' }}>{otpModal._id.substring(otpModal._id.length - 6).toUpperCase()}</strong> · {otpModal.customer_id?.name || 'Customer'}
-              </p>
-
-              <div className="pv-otp-boxes">
-                {[0, 1, 2, 3].map((idx) => (
-                  <input
-                    key={idx}
-                    ref={otpRefs[idx]}
-                    type="text"
-                    maxLength={1}
-                    inputMode="numeric"
-                    className="pv-otp-box"
-                    value={otpValues[idx]}
-                    onChange={(e) => handleOtpInput(idx, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                  />
-                ))}
+      <AnimatePresence>
+        {otpModal && (
+          <div className="pv-modal-overlay" onClick={() => setOtpModal(null)}>
+            <motion.div variants={scaleUpVariant} initial="hidden" animate="visible" exit="hidden" className="pv-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="pv-modal-header">
+                <h3 className="pv-modal-title" style={{ color: '#4ade80' }}>Verify OTP to Complete</h3>
+                <button className="pv-modal-close" onClick={() => setOtpModal(null)}><X size={16} /></button>
               </div>
+              <div className="pv-modal-body">
+                <p className="pv-otp-hint">
+                  Ask the customer for their <strong style={{ color: '#f1f5f9' }}>4-digit OTP</strong> to confirm the job is formally completed.
+                  <br />Booking: <strong style={{ color: '#60a5fa' }}>{otpModal._id.substring(otpModal._id.length - 6).toUpperCase()}</strong>
+                </p>
 
-              <p className="pv-otp-resend">
-                Didn't receive?
-                <button onClick={() => {}}>
-                  <RefreshCw size={12} style={{ display: 'inline', marginRight: 4 }} />
-                  Resend OTP
+                <div className="pv-otp-boxes">
+                  {[0, 1, 2, 3].map((idx) => (
+                    <input
+                      key={idx}
+                      ref={otpRefs[idx]}
+                      type="text"
+                      maxLength={1}
+                      inputMode="numeric"
+                      className="pv-otp-box"
+                      value={otpValues[idx]}
+                      onChange={(e) => handleOtpInput(idx, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                    />
+                  ))}
+                </div>
+
+                <p className="pv-otp-resend">
+                  Customer didn't receive it?
+                  <button onClick={handleResendOtp} disabled={resendLoading}>
+                    <RefreshCw size={12} style={{ display: 'inline', marginRight: 4 }} className={resendLoading ? 'al-spin' : ''} />
+                    {resendLoading ? 'Sending...' : 'Resend OTP'}
+                  </button>
+                </p>
+              </div>
+              <div className="pv-modal-footer">
+                <button className="pv-btn pv-btn-ghost" onClick={() => setOtpModal(null)} disabled={actionLoading}>Cancel</button>
+                <button
+                  className="pv-btn pv-btn-primary"
+                  onClick={handleOtpVerify}
+                  disabled={otpValues.join('').length < 4 || actionLoading}
+                  style={{ opacity: otpValues.join('').length < 4 ? 0.5 : 1, background: '#1c4ed8', boxShadow: 'none' }}
+                >
+                  {actionLoading ? <Loader2 size={15} className="al-spin" /> : <><ShieldCheck size={15} /> Verify OTP</>}
                 </button>
-              </p>
-            </div>
-            <div className="pv-modal-footer">
-              <button className="pv-btn pv-btn-ghost" onClick={() => setOtpModal(null)} disabled={actionLoading}>Cancel</button>
-              <button
-                className="pv-btn pv-btn-primary"
-                onClick={handleOtpVerify}
-                disabled={otpValues.join('').length < 4 || actionLoading}
-                style={{ opacity: otpValues.join('').length < 4 ? 0.5 : 1 }}
-              >
-                {actionLoading ? <Loader2 size={15} className="al-spin" /> : <><ShieldCheck size={15} /> Verify OTP</>}
-              </button>
-            </div>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </>
   );
 }

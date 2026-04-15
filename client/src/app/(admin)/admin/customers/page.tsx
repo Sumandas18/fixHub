@@ -8,9 +8,10 @@ import { motion } from 'framer-motion';
 import { containerVariants, fadeUpVariant } from '@/lib/animations';
 
 export default function AdminCustomersPage() {
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [search, setSearch]       = useState('');
+  const [customers, setCustomers]         = useState<any[]>([]);
+  const [loading, setLoading]             = useState(true);
+  const [search, setSearch]               = useState('');
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -26,9 +27,26 @@ export default function AdminCustomersPage() {
     load();
   }, []);
 
+  /* ── Block / Unblock ── */
+  const handleBlockUnblock = async (id: string, isCurrentlyBlocked: boolean) => {
+    setActionLoading(id);
+    try {
+      await adminApi.blockUnblockUser(id);
+      // Optimistic update
+      setCustomers(prev =>
+        prev.map(c => c._id === id ? { ...c, isBlocked: !c.isBlocked } : c)
+      );
+      toast.success(`Customer ${isCurrentlyBlocked ? 'unblocked' : 'blocked'} successfully`);
+    } catch {
+      toast.error('Failed to update customer status');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const filtered = customers.filter((c) =>
-    (c.name || c.user_name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (c.email || c.user_email || '').toLowerCase().includes(search.toLowerCase())
+    (c.user_name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (c.user_email || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -70,12 +88,13 @@ export default function AdminCustomersPage() {
                 <th>Phone</th>
                 <th>Verified</th>
                 <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', color: '#64748b', padding: 40 }}>
+                  <td colSpan={7} style={{ textAlign: 'center', color: '#64748b', padding: 40 }}>
                     <Users size={32} style={{ margin: '0 auto 10px', display: 'block', opacity: 0.3 }} />
                     No customers found
                   </td>
@@ -86,21 +105,21 @@ export default function AdminCustomersPage() {
                   <td>
                     <div className="td-name">
                       <div className="td-avatar">
-                        {(c.name || c.user_name || 'C')[0].toUpperCase()}
+                        {(c.user_name || 'C')[0].toUpperCase()}
                       </div>
-                      <span style={{ fontWeight: 600, color: '#f1f5f9' }}>{c.name || c.user_name || '—'}</span>
+                      <span style={{ fontWeight: 600, color: '#f1f5f9' }}>{c.user_name || '—'}</span>
                     </div>
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <Mail size={13} color="#4a5568" />
-                      {c.email || c.user_email || '—'}
+                      {c.user_email || '—'}
                     </div>
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <Phone size={13} color="#4a5568" />
-                      {c.contact || c.user_contact || '—'}
+                      {c.user_contact || '—'}
                     </div>
                   </td>
                   <td>
@@ -113,6 +132,22 @@ export default function AdminCustomersPage() {
                     <span className={`badge ${c.isBlocked ? 'blocked' : 'active'}`}>
                       {c.isBlocked ? 'Blocked' : 'Active'}
                     </span>
+                  </td>
+                  {/* ── Block / Unblock Action ── */}
+                  <td>
+                    <button
+                      className={`btn btn-sm ${c.isBlocked ? 'btn-success' : 'btn-danger'}`}
+                      disabled={actionLoading === c._id}
+                      onClick={() => handleBlockUnblock(c._id, c.isBlocked)}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                    >
+                      {actionLoading === c._id
+                        ? <Loader2 size={12} className="al-spin" />
+                        : c.isBlocked
+                          ? <><Shield size={12} /> Unblock</>
+                          : <><ShieldOff size={12} /> Block</>
+                      }
+                    </button>
                   </td>
                 </tr>
               ))}

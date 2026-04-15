@@ -67,6 +67,66 @@ class ServiceProviderController {
         }
     }
 
+    async completeProfile(req, res) {
+        try {
+            const provider_id = req.user.user_id || req.user._id;
+            const { service_id, service_area_zip, experience, charges_per_hour } = req.body;
+            let profile_img, profile_img_url;
+
+            if (!service_id || !service_area_zip || !experience || !charges_per_hour) {
+                return res.status(StatusCode.BAD_REQUEST).json({
+                    success: false,
+                    message: "All required fields must be filled"
+                });
+            }
+
+            const { data, error } = updateServiceProviderValidation.validate({ service_area_zip, experience, charges_per_hour });
+            if (error) {
+                return res.status(StatusCode.BAD_REQUEST).json({
+                    success: false,
+                    message: error.details.map(err => err.message)
+                });
+            }
+
+            let serviceProviderObj = {
+                service_id, service_area_zip, experience, charges_per_hour, isProfileCompleted: true, status: 'pending'
+            };
+
+            if (req.file) {
+                profile_img = req.file.filename;
+                profile_img_url = req.file.path;
+                serviceProviderObj = { ...serviceProviderObj, profile_img, profile_img_url };
+            }
+
+            // The profile should already exist from registration
+            const serviceProvider = await serviceProviderModel.findOneAndUpdate(
+                { provider_id }, 
+                serviceProviderObj, 
+                { new: true }
+            );
+
+            if (!serviceProvider) {
+                return res.status(StatusCode.NOT_FOUND).json({
+                    success: false,
+                    message: "Provider profile not found"
+                });
+            }
+
+            return res.status(StatusCode.SUCCESS).json({
+                success: true,
+                message: "Profile completed successfully. Awaiting admin approval.",
+                data: serviceProvider
+            });
+
+        } catch (err) {
+            res.status(StatusCode.SERVER_ERROR).json({
+                success: false,
+                message: err.message
+            });
+        }
+    }
+
+
     async getAllServiceProvider(req, res) {
         try {
             const allServiceProvider = await serviceProviderModel.find();

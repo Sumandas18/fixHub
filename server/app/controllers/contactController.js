@@ -31,7 +31,7 @@ class ContactController {
             const contactObj = new contactModel({ name, email, subject, message });
 
             const contact = await contactObj.save();
-            await sendOTPMails({ contact, type: "messageReceived" });
+            sendOTPMails({ contact, type: "messageReceived" }).catch(console.error);
 
             return res.status(StatusCode.CREATED).json({
                 success: true,
@@ -143,7 +143,7 @@ class ContactController {
 
             existMessage.status = 'completed';
             await existMessage.save();
-            await sendOTPMails({ contact: { ...existMessage, reply: req.body.reply }, type: "replySent" });
+            sendOTPMails({ contact: { ...existMessage.toObject(), reply: req.body.reply }, type: "replySent" }).catch(console.error);
 
             return res.status(StatusCode.SUCCESS).json({
                 success: true,

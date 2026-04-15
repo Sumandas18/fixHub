@@ -192,8 +192,7 @@ class UserController {
 
             user.isBlocked = !user.isBlocked;
             await user.save();
-
-            await sendOTPMails({ user, isBlocked: !user.isBlocked, reason: null });
+            sendOTPMails({ user, isBlocked: user.isBlocked, type: "blockunblockAccount" }).catch(console.error);
 
             return res.status(StatusCode.SUCCESS).json({
                 success: true,
