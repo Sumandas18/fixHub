@@ -112,6 +112,10 @@ class ServiceProviderController {
                 });
             }
 
+            // Dispatch Email indicating it's under review
+            const sendOTPMails = require("../utils/sendMail");
+            sendOTPMails({ user: req.user, provider: serviceProvider, type: "providerStatus" }).catch(console.error);
+
             return res.status(StatusCode.SUCCESS).json({
                 success: true,
                 message: "Profile completed successfully. Awaiting admin approval.",

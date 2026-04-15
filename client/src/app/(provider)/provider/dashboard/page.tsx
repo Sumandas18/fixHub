@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { CalendarDays, Star, TrendingUp, CheckCircle, Clock, Wrench, ArrowRight, Loader2, AlertCircle, Plus, Upload, X } from 'lucide-react';
+import { CalendarDays, Star, TrendingUp, CheckCircle, Clock, Wrench, ArrowRight, Loader2, AlertCircle, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 import { providerApi } from '@/services/api/provider';
 import { adminApi } from '@/services/api/admin'; // To fetch services for the dropdown
@@ -23,7 +23,7 @@ const quickActions = [
 ];
 
 export default function ProviderDashboardPage() {
-  const { user, setUser } = useAuthStore();
+  const { user } = useAuthStore();
   const [data, setData] = useState({
     bookings: [],
   });
@@ -46,12 +46,10 @@ export default function ProviderDashboardPage() {
           bookings: bookingsData.data || [],
         });
         
-        // Fetch services in case they need to complete profile
-        if (user && !user.isProfileCompleted) {
-            const servicesData = await adminApi.getServices();
-            setServicesList(servicesData.data || []);
-        }
-      } catch (error) {
+        // Fetch services globally for either the dashboard or the onboarding modal
+        const servicesData = await adminApi.getServices();
+        setServicesList(servicesData.data || []);
+      } catch {
         toast.error('Failed to load dashboard data');
       } finally {
         setLoading(false);
@@ -82,7 +80,6 @@ export default function ProviderDashboardPage() {
       fd.append('service_id', profileForm.service_id);
       fd.append('experience', profileForm.experience);
       fd.append('charges_per_hour', profileForm.charges_per_hour);
-      // Backend expects an array or string for service_area_zip. We'll send it as a single string (which becomes one entry)
       fd.append('service_area_zip', profileForm.service_area_zip);
       if (profileImg) {
         fd.append('profile-pic', profileImg);
@@ -93,7 +90,7 @@ export default function ProviderDashboardPage() {
       
       // Update local storage user state optimistically
       if (user) {
-        setUser({ ...user, isProfileCompleted: true, providerStatus: 'pending' });
+        useAuthStore.setState({ user: { ...user, isProfileCompleted: true, providerStatus: 'pending' } });
       }
       setShowProfileModal(false);
     } catch (err: any) {
@@ -112,10 +109,122 @@ export default function ProviderDashboardPage() {
     );
   }
 
-  // If user hasn't completed their profile, show a strong banner
   const isProfileIncomplete = user && !user.isProfileCompleted;
   const isProfilePending = user && user.isProfileCompleted && user.providerStatus === 'pending';
   const isProfileRejected = user && user.isProfileCompleted && user.providerStatus === 'rejected';
+
+  // ── FULL PAGE ONBOARDING FOR INCOMPLETE PROFILE ──
+  if (isProfileIncomplete) {
+    return (
+      <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', margin: '-20px' }}>
+        {/* Animated Gradient Background */}
+        <div style={{ position: 'absolute', top: -100, left: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle,rgba(28,78,216,0.15) 0%,transparent 70%)', filter: 'blur(60px)', animation: 'blobA 10s ease-in-out infinite alternate', zIndex: 0 }} />
+        <div style={{ position: 'absolute', bottom: -100, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle,rgba(168,85,247,0.15) 0%,transparent 70%)', filter: 'blur(60px)', animation: 'blobB 12s ease-in-out infinite alternate', zIndex: 0 }} />
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, ease: 'easeOut' }}
+          style={{ position: 'relative', zIndex: 1, background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', padding: '50px 40px', borderRadius: 24, textAlign: 'center', maxWidth: 440, boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}
+        >
+          <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg,rgba(28,78,216,0.2),rgba(124,58,237,0.2))', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+            <Wrench size={30} color="#60a5fa" />
+          </div>
+          <h2 style={{ fontSize: 24, fontWeight: 700, color: '#f1f5f9', marginBottom: 12 }}>Welcome to FixHub!</h2>
+          <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6, marginBottom: 32 }}>
+            Please fill this form to authorize yourself. We need a few more details about your expertise before you can start accepting jobs.
+          </p>
+          <motion.button
+            whileHover={{ scale: 1.05, boxShadow: '0 8px 24px rgba(28,78,216,0.4)' }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowProfileModal(true)}
+            style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg,#1c4ed8 0%,#7c3aed 100%)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}
+          >
+            Complete Profile
+          </motion.button>
+        </motion.div>
+
+        {/* ── Complete Profile Modal (matches normal rendering logic) ── */}
+        <AnimatePresence>
+          {showProfileModal && (
+            <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+                style={{ width: '100%', maxWidth: 540, background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, boxShadow: '0 32px 80px rgba(0,0,0,0.7)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}
+              >
+                <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Complete Your Profile</h2>
+                    <p style={{ fontSize: 13, color: '#94a3b8' }}>Provide your service details to start receiving bookings.</p>
+                  </div>
+                  <button onClick={() => setShowProfileModal(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><X size={20} /></button>
+                </div>
+
+                <div style={{ padding: '24px', overflowY: 'auto' }}>
+                  <form id="profileForm" onSubmit={handleCompleteProfile} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    <div className="pv-field">
+                      <label className="pv-label">Service Category *</label>
+                      <select className="pv-select" required value={profileForm.service_id} onChange={(e) => setProfileForm({ ...profileForm, service_id: e.target.value })} style={{ width: '100%' }}>
+                        <option value="" disabled>Select your expertise...</option>
+                        {servicesList.map(s => <option key={s._id} value={s._id}>{s.service_name}</option>)}
+                      </select>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 16 }}>
+                      <div className="pv-field" style={{ flex: 1 }}>
+                        <label className="pv-label">Experience *</label>
+                        <input type="text" className="pv-input" placeholder="e.g. 5 Years" required value={profileForm.experience} onChange={(e) => setProfileForm({ ...profileForm, experience: e.target.value })} />
+                      </div>
+                      <div className="pv-field" style={{ flex: 1 }}>
+                        <label className="pv-label">Rate (₹ / hr) *</label>
+                        <input type="number" className="pv-input" placeholder="e.g. 400" required value={profileForm.charges_per_hour} onChange={(e) => setProfileForm({ ...profileForm, charges_per_hour: e.target.value })} />
+                      </div>
+                    </div>
+
+                    <div className="pv-field">
+                      <label className="pv-label">Service Area ZIP Code *</label>
+                      <input type="text" className="pv-input" placeholder="e.g. 700001" required value={profileForm.service_area_zip} onChange={(e) => setProfileForm({ ...profileForm, service_area_zip: e.target.value })} />
+                    </div>
+
+                    <div className="pv-field">
+                      <label className="pv-label">Profile Avatar / Image <span style={{ fontWeight: 400, color: '#64748b', textTransform: 'none' }}>(Optional)</span></label>
+                      <input type="file" ref={fileRef} hidden accept="image/*" onChange={handleFileChange} />
+                      <div onClick={() => fileRef.current?.click()} style={{ border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 12, padding: profileImgPreview ? '12px' : '24px', textAlign: 'center', cursor: 'pointer', background: 'rgba(255,255,255,0.02)' }}>
+                        {profileImgPreview ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                            <img src={profileImgPreview} alt="Preview" style={{ width: 60, height: 60, borderRadius: 10, objectFit: 'cover' }} />
+                            <div style={{ textAlign: 'left' }}>
+                              <p style={{ fontSize: 14, color: '#fff', fontWeight: 600 }}>{profileImg?.name}</p>
+                              <p style={{ fontSize: 12, color: '#60a5fa' }}>Click to change</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                            <Upload color="#64748b" size={24} />
+                            <p style={{ fontSize: 14, color: '#94a3b8' }}>Click to upload your profile avatar</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </form>
+                </div>
+
+                <div style={{ padding: '20px 24px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                  <button type="button" onClick={() => setShowProfileModal(false)} className="pv-btn pv-btn-ghost">Cancel</button>
+                  <button type="submit" form="profileForm" disabled={submittingProfile} className="pv-btn pv-btn-primary">
+                    {submittingProfile ? <Loader2 className="al-spin" size={16} /> : 'Submit Profile'}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        <style>{`
+          @keyframes blobA { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(40px,40px) scale(1.1)} }
+          @keyframes blobB { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(-30px,-20px) scale(1.05)} }
+        `}</style>
+      </div>
+    );
+  }
 
   // Calculate dynamic stats
   const totalBookings = data.bookings.length;
@@ -168,29 +277,14 @@ export default function ProviderDashboardPage() {
         </div>
       </div>
 
-      {/* Profile Status Warnings */}
+      {/* Settings Warnings */}
       <AnimatePresence>
-        {isProfileIncomplete && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 24, padding: '16px 20px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <AlertCircle color="#f87171" size={24} />
-              <div>
-                <p style={{ fontSize: 15, fontWeight: 700, color: '#f87171' }}>Profile Incomplete!</p>
-                <p style={{ fontSize: 13, color: '#fca5a5' }}>You won't be visible to customers until you complete your profile setup.</p>
-              </div>
-            </div>
-            <button onClick={() => setShowProfileModal(true)} className="pv-btn pv-btn-primary" style={{ background: '#ef4444', border: 'none', boxShadow: '0 4px 14px rgba(239,68,68,0.4)', color: '#fff' }}>
-              Complete Profile
-            </button>
-          </motion.div>
-        )}
-
         {isProfilePending && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 24, padding: '16px 20px', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
             <Clock color="#facc15" size={24} />
             <div>
               <p style={{ fontSize: 15, fontWeight: 700, color: '#facc15' }}>Profile Under Review</p>
-              <p style={{ fontSize: 13, color: '#fef08a' }}>Your profile has been submitted and is awaiting admin approval.</p>
+              <p style={{ fontSize: 13, color: '#fef08a' }}>Your profile has been submitted and is awaiting admin approval. You can still modify your details inside "My Services".</p>
             </div>
           </motion.div>
         )}
@@ -210,6 +304,11 @@ export default function ProviderDashboardPage() {
       <motion.div variants={fadeUpVariant} className="pv-page-header">
         <div>
           <h1 className="pv-page-title">Provider Dashboard</h1>
+          {user?.providerStatus === 'approved' && (
+             <span style={{ display: 'inline-block', padding: '4px 8px', background: 'rgba(74, 222, 128, 0.15)', color: '#4ade80', borderRadius: 6, fontSize: 12, fontWeight: 700, marginBottom: 8 }}>
+                ✓ VERIFIED PROVIDER
+             </span>
+          )}
           <p className="pv-page-subtitle">Good morning! You have {pendingRequests} pending requests.</p>
         </div>
         <Link href="/provider/bookings">
@@ -324,118 +423,6 @@ export default function ProviderDashboardPage() {
 
         </div>
       </div>
-
-      {/* ── Complete Profile Modal ── */}
-      <AnimatePresence>
-        {showProfileModal && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowProfileModal(false)}>
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              style={{ width: '100%', maxWidth: 540, background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, boxShadow: '0 32px 80px rgba(0,0,0,0.7)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}
-            >
-              <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Complete Your Profile</h2>
-                  <p style={{ fontSize: 13, color: '#94a3b8' }}>Provide your service details to start receiving bookings.</p>
-                </div>
-                <button onClick={() => setShowProfileModal(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><X size={20} /></button>
-              </div>
-
-              <div style={{ padding: '24px', overflowY: 'auto' }}>
-                <form id="profileForm" onSubmit={handleCompleteProfile} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                  
-                  {/* Service Selection */}
-                  <div className="pv-field">
-                    <label className="pv-label">Service Category *</label>
-                    <select
-                      className="pv-select"
-                      required
-                      value={profileForm.service_id}
-                      onChange={(e) => setProfileForm({ ...profileForm, service_id: e.target.value })}
-                      style={{ width: '100%' }}
-                    >
-                      <option value="" disabled>Select your expertise...</option>
-                      {servicesList.map(s => (
-                        <option key={s._id} value={s._id}>{s.service_name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 16 }}>
-                    <div className="pv-field" style={{ flex: 1 }}>
-                      <label className="pv-label">Experience *</label>
-                      <input
-                        type="text"
-                        className="pv-input"
-                        placeholder="e.g. 5 Years"
-                        required
-                        value={profileForm.experience}
-                        onChange={(e) => setProfileForm({ ...profileForm, experience: e.target.value })}
-                      />
-                    </div>
-                    <div className="pv-field" style={{ flex: 1 }}>
-                      <label className="pv-label">Rate (₹ / hr) *</label>
-                      <input
-                        type="number"
-                        className="pv-input"
-                        placeholder="e.g. 400"
-                        required
-                        value={profileForm.charges_per_hour}
-                        onChange={(e) => setProfileForm({ ...profileForm, charges_per_hour: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="pv-field">
-                    <label className="pv-label">Service Area ZIP Code *</label>
-                    <input
-                      type="text"
-                      className="pv-input"
-                      placeholder="e.g. 700001"
-                      required
-                      value={profileForm.service_area_zip}
-                      onChange={(e) => setProfileForm({ ...profileForm, service_area_zip: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="pv-field">
-                    <label className="pv-label">Profile Image / ID Proof <span style={{ fontWeight: 400, color: '#64748b', textTransform: 'none' }}>(Optional)</span></label>
-                    <input type="file" ref={fileRef} hidden accept="image/*" onChange={handleFileChange} />
-                    <div onClick={() => fileRef.current?.click()} style={{ border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 12, padding: profileImgPreview ? '12px' : '24px', textAlign: 'center', cursor: 'pointer', background: 'rgba(255,255,255,0.02)' }}>
-                      {profileImgPreview ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                          <img src={profileImgPreview} alt="Preview" style={{ width: 60, height: 60, borderRadius: 10, objectFit: 'cover' }} />
-                          <div style={{ textAlign: 'left' }}>
-                            <p style={{ fontSize: 14, color: '#fff', fontWeight: 600 }}>{profileImg?.name}</p>
-                            <p style={{ fontSize: 12, color: '#60a5fa' }}>Click to change</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                          <Upload color="#64748b" size={24} />
-                          <p style={{ fontSize: 14, color: '#94a3b8' }}>Click to upload an image</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                </form>
-              </div>
-
-              <div style={{ padding: '20px 24px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-                <button type="button" onClick={() => setShowProfileModal(false)} className="pv-btn pv-btn-ghost">Cancel</button>
-                <button type="submit" form="profileForm" disabled={submittingProfile} className="pv-btn pv-btn-primary">
-                  {submittingProfile ? <Loader2 className="al-spin" size={16} /> : 'Submit Profile'}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
     </motion.div>
   );
 }

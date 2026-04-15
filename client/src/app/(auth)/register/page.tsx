@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Loader2, User, Mail, Phone, Lock, ArrowRight, X } from 'lucide-react';
+import { Eye, EyeOff, Loader2, User, Mail, Phone, Lock, ArrowRight, X, FileText, UploadCloud } from 'lucide-react';
 import api from '@/lib/api';
 
 /* ─── Animation variants ─────────────────────────────────── */
@@ -44,6 +44,7 @@ const labelStyle = {
 /* ═══════════════════════════════════════════════════════════ */
 export default function RegisterPage() {
   const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
 
   /* role tab */
   const [role, setRole] = useState<'customer' | 'provider'>('customer');
@@ -54,6 +55,8 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  
   const [showPw, setShowPw] = useState(false);
   const [showCpw, setShowCpw] = useState(false);
 
@@ -66,6 +69,12 @@ export default function RegisterPage() {
     ? 'linear-gradient(135deg,#a855f7 0%,#3b82f6 100%)'
     : 'linear-gradient(135deg,#1c4ed8 0%,#7c3aed 100%)';
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setDocumentFile(e.target.files[0]);
+    }
+  };
+
   /* ── Submit ──────────────────────────────────────────────── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +82,11 @@ export default function RegisterPage() {
 
     if (password !== confirmPw) {
       toast.error('Passwords do not match!');
+      return;
+    }
+
+    if (role === 'provider' && !documentFile) {
+      toast.error('An ID document is required for Provider registration.');
       return;
     }
 
@@ -104,14 +118,16 @@ export default function RegisterPage() {
         }
 
       } else {
-        // ── Provider Registration (simplified — no service/image required) ──
-        // Providers will complete their profile (service, experience, rates, image)
-        // after email verification and login via the "Complete Profile" flow.
-        const res = await api.post('/provider/register', {
-          user_name: name,
-          user_email: email,
-          user_contact: phone,
-          user_password: password,
+        // ── Provider Registration (FormData) ──
+        const fd = new FormData();
+        fd.append('user_name', name);
+        fd.append('user_email', email);
+        fd.append('user_contact', phone);
+        fd.append('user_password', password);
+        fd.append('document', documentFile!);
+
+        const res = await api.post('/provider/register', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' }
         });
 
         if (res.data.success || res.status === 201) {
@@ -171,18 +187,6 @@ export default function RegisterPage() {
               </button>
             ))}
           </div>
-
-          {/* Provider info banner */}
-          {role === 'provider' && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-              style={{ marginBottom: 20, padding: '12px 16px', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 12 }}
-            >
-              <p style={{ fontSize: 12, color: '#60a5fa', lineHeight: 1.6 }}>
-                <strong>Quick registration!</strong> After verifying your email, log in to complete your provider profile (service, experience, rates & photo).
-              </p>
-            </motion.div>
-          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -251,12 +255,35 @@ export default function RegisterPage() {
               )}
             </motion.div>
 
+            {/* Provider Document Upload */}
+            {role === 'provider' && (
+              <motion.div custom={5} variants={fadeUp} initial="hidden" animate="visible">
+                <label style={labelStyle}>ID Document / Legal Proof <span style={{ color: '#ef4444' }}>*</span></label>
+                <input type="file" required ref={fileRef} hidden accept="image/*,application/pdf" onChange={handleFileChange} />
+                <div onClick={() => fileRef.current?.click()} style={{ ...inp(focused === 'doc', accent), padding: '20px', textAlign: 'center', cursor: 'pointer', borderStyle: 'dashed' }}>
+                  {documentFile ? (
+                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                       <FileText size={28} color="#60a5fa" />
+                       <span style={{ fontSize: 13, color: '#f1f5f9', fontWeight: 600 }}>{documentFile.name}</span>
+                       <span style={{ fontSize: 11, color: '#64748b' }}>Click to change file</span>
+                     </div>
+                  ) : (
+                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                       <UploadCloud size={28} color="#64748b" />
+                       <span style={{ fontSize: 13, color: '#94a3b8' }}>Upload Driver's License, Aadhaar, or Business PDF</span>
+                       <span style={{ fontSize: 11, color: '#64748b' }}>(Max 5MB)</span>
+                     </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
             {/* Submit */}
             <motion.button
               type="submit" disabled={loading}
               whileHover={{ scale: 1.03, boxShadow: `0 8px 28px rgba(${accent},0.45)` }}
               whileTap={{ scale: 0.97 }}
-              style={{ width: '100%', padding: '13px', fontSize: 14, fontWeight: 700, color: '#fff', background: btnGradient, border: 'none', borderRadius: 12, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: loading ? 0.65 : 1, boxShadow: `0 4px 18px rgba(${accent},0.3)`, fontFamily: 'inherit', marginTop: 4 }}
+              style={{ width: '100%', padding: '13px', fontSize: 14, fontWeight: 700, color: '#fff', background: btnGradient, border: 'none', borderRadius: 12, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: loading ? 0.65 : 1, boxShadow: `0 4px 18px rgba(${accent},0.3)`, fontFamily: 'inherit', marginTop: 8 }}
             >
               {loading ? <><Loader2 size={16} className="al-spin" /> Creating Account…</> : <>Create Account <ArrowRight size={15} /></>}
             </motion.button>

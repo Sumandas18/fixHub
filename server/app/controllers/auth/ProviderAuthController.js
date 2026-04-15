@@ -17,13 +17,19 @@ class ProviderAuthController {
         try {
             const { user_name, user_email, user_password, user_contact } = req.body;
 
-            // ── Validate minimal required fields only ──
-            // service_id, experience, and image are collected AFTER login via "Complete Profile"
+            // Document is required during signup
             if (!user_name || !user_email || !user_password || !user_contact) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
                     message: "Name, email, password, and contact are required",
                 });
+            }
+
+            if (!req.file) {
+                 return res.status(StatusCode.BAD_REQUEST).json({
+                     success: false,
+                     message: "ID Document is required for provider registration",
+                 });
             }
 
             const { error } = checkCreateProviderValidate.validate(req.body);

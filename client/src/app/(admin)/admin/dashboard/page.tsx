@@ -7,16 +7,20 @@ import {
   CalendarDays,
   Star,
   TrendingUp,
-  TrendingDown,
   ShieldCheck,
   Clock,
   Loader2,
+  CheckCircle,
+  X,
+  FileText,
+  User,
+  ExternalLink
 } from 'lucide-react';
 import Link from 'next/link';
 import { adminApi } from '@/services/api/admin';
 import toast from 'react-hot-toast';
-import { motion } from 'framer-motion';
-import { containerVariants, fadeUpVariant } from '@/lib/animations';
+import { motion, AnimatePresence } from 'framer-motion';
+import { containerVariants, fadeUpVariant, scaleUpVariant } from '@/lib/animations';
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState({
@@ -28,47 +32,65 @@ export default function AdminDashboardPage() {
     ratings: [] as any[],
   });
   const [loading, setLoading] = useState(true);
+  
+  // Provider Approval Modal State
+  const [approvalModal, setApprovalModal] = useState<any>(null);
+  const [approvalLoading, setApprovalLoading] = useState(false);
+
+  const fetchDashboardData = async () => {
+    try {
+      const [admins, customers, providers, serviceProviders, bookings, ratings] =
+        await Promise.allSettled([
+          adminApi.getAdmins(),
+          adminApi.getCustomers(),
+          adminApi.getProviders(),
+          adminApi.getServiceProviders(), // Should get all providers including pending
+          adminApi.getBookings(),
+          adminApi.getRatings(),
+        ]);
+
+      const resolve = (r: PromiseSettledResult<any>) =>
+        r.status === 'fulfilled' ? r.value?.data || [] : [];
+
+      setData({
+        admins: resolve(admins),
+        customers: resolve(customers),
+        providers: resolve(providers),
+        serviceProviders: resolve(serviceProviders),
+        bookings: resolve(bookings),
+        ratings: resolve(ratings),
+      });
+
+    } catch {
+      toast.error('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const [admins, customers, providers, serviceProviders, bookings, ratings] =
-          await Promise.allSettled([
-            adminApi.getAdmins(),
-            adminApi.getCustomers(),
-            adminApi.getProviders(),
-            adminApi.getServiceProviders(),
-            adminApi.getBookings(),
-            adminApi.getRatings(),
-          ]);
-
-        // Use allSettled so one failure doesn't block everything
-        const resolve = (r: PromiseSettledResult<any>) =>
-          r.status === 'fulfilled' ? r.value?.data || [] : [];
-
-        setData({
-          admins: resolve(admins),
-          customers: resolve(customers),
-          providers: resolve(providers),
-          serviceProviders: resolve(serviceProviders),
-          bookings: resolve(bookings),
-          ratings: resolve(ratings),
-        });
-
-        // Toast only if a call truly failed
-        const failed = [admins, customers, providers, serviceProviders, bookings, ratings].filter(
-          (r) => r.status === 'rejected'
-        );
-        if (failed.length > 0) toast.error('Some data failed to load');
-      } catch {
-        toast.error('Failed to load dashboard data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDashboardData();
   }, []);
+
+  const handleApproveReject = async (id: string, status: 'approve' | 'reject') => {
+    setApprovalLoading(true);
+    try {
+      await adminApi.approveProvider(id, status);
+      toast.success(`Provider ${status === 'approve' ? 'approved' : 'rejected'} successfully!`);
+      // Update local state without fetching again
+      setData(prev => ({
+        ...prev,
+        serviceProviders: prev.serviceProviders.map((sp: any) => 
+          sp._id === id ? { ...sp, status: status === 'approve' ? 'approved' : 'rejected' } : sp
+        )
+      }));
+      setApprovalModal(null);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || `Failed to ${status} provider`);
+    } finally {
+      setApprovalLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -96,8 +118,8 @@ export default function AdminDashboardPage() {
     .slice(0, 5)
     .map((b: any) => ({
       id:       b._id.slice(-6).toUpperCase(),
-      customer: b.customer_id?.name || 'Unknown',
-      service:  b.service_provider_id?.service_id?.service_name || 'Service',
+      customer: b.customer_id?.user_name || b.customer_id?.name || 'Unknown',
+      service:  b.service_provider_id?.service_id?.service_name || b.service_id?.service_name || 'Service',
       status:   b.status,
       date:     new Date(b.scheduled_date || b.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     }));
@@ -110,10 +132,13 @@ export default function AdminDashboardPage() {
   ];
 
   const pendingProviders = data.serviceProviders
-    .filter((sp: any) => sp.status === 'pending')
+    .filter((sp: any) => sp.status === 'pending' && sp.isProfileCompleted)
     .slice(0, 4)
     .map((sp: any) => ({
-      name:    sp.provider_id?.name || 'Unknown Provider',
+      ...sp,
+      name:    sp.provider_id?.user_name || sp.provider_id?.name || 'Unknown Provider',
+      email:   sp.provider_id?.user_email || 'No email',
+      doc_url: sp.provider_id?.doc_url,
       service: sp.service_id?.service_name || 'Unknown Service',
       date:    new Date(sp.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       id:      sp._id,
@@ -181,7 +206,7 @@ export default function AdminDashboardPage() {
             </thead>
             <tbody>
               {recentBookings.length === 0 ? (
-                <tr><td colSpan={5} style={{ textAlign: 'center', color: '#64748b' }}>No recent bookings found</td></tr>
+                <tr><td colSpan={5} style={{ textAlign: 'center', color: '#64748b', padding: '40px 0' }}>No recent bookings found</td></tr>
               ) : recentBookings.map((row) => (
                 <tr key={row.id}>
                   <td style={{ color: '#eb5e28', fontWeight: 600, fontFamily: 'monospace' }}>{row.id}</td>
@@ -206,6 +231,65 @@ export default function AdminDashboardPage() {
 
         {/* Right Column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {/* Pending Provider Approvals - STEP 5 & 6 */}
+          <motion.div variants={fadeUpVariant} className="data-card" style={{ border: '1px solid rgba(235, 94, 40, 0.2)' }}>
+            <div className="data-card-header">
+              <h2 className="data-card-title" style={{ color: '#eb5e28' }}>Pending Approvals</h2>
+              <Link href="/admin/providers">
+                <button className="data-card-action">View All →</button>
+              </Link>
+            </div>
+            <div style={{ padding: '8px 0' }}>
+              {pendingProviders.length === 0 ? (
+                <p style={{ color: '#64748b', textAlign: 'center', padding: '20px 0' }}>No pending approvals.</p>
+              ) : pendingProviders.map((p, idx) => (
+                <div
+                  key={p.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '11px 22px',
+                    borderBottom: idx < pendingProviders.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                  }}
+                >
+                  <div className="td-name">
+                    <div className="td-avatar" style={{ background: 'linear-gradient(135deg, #eb5e28, #f59e0b)' }}>
+                      {p.name[0]}
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 13, color: '#f1f5f9', fontWeight: 600 }}>{p.name}</p>
+                      <p style={{ fontSize: 11, color: '#94a3b8' }}>{p.email}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Bubble Animated Approve Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.05, boxShadow: '0 4px 15px rgba(235,94,40,0.3)' }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setApprovalModal(p)}
+                    style={{
+                      background: 'linear-gradient(135deg, #eb5e28, #f59e0b)',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '6px 14px',
+                      borderRadius: 20,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4
+                    }}
+                  >
+                    <CheckCircle size={14} /> Review
+                  </motion.button>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
           {/* Activity Feed */}
           <motion.div variants={fadeUpVariant} className="data-card">
             <div className="data-card-header">
@@ -223,43 +307,92 @@ export default function AdminDashboardPage() {
               ))}
             </div>
           </motion.div>
-
-          {/* Pending Provider Approvals */}
-          <motion.div variants={fadeUpVariant} className="data-card">
-            <div className="data-card-header">
-              <h2 className="data-card-title">Pending Approvals</h2>
-              <Link href="/admin/providers">
-                <button className="data-card-action">View All →</button>
-              </Link>
-            </div>
-            <div style={{ padding: '8px 0' }}>
-              {pendingProviders.length === 0 ? (
-                <p style={{ color: '#64748b', textAlign: 'center', padding: '20px 0' }}>No pending approvals.</p>
-              ) : pendingProviders.map((p, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '11px 22px',
-                    borderBottom: idx < pendingProviders.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                  }}
-                >
-                  <div className="td-name">
-                    <div className="td-avatar">{p.name[0]}</div>
-                    <div>
-                      <p style={{ fontSize: 13, color: '#f1f5f9', fontWeight: 600 }}>{p.name}</p>
-                      <p style={{ fontSize: 12, color: '#64748b' }}>{p.service}</p>
-                    </div>
-                  </div>
-                  <span style={{ fontSize: 11, color: '#4a5568' }}>{p.date}</span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
         </div>
       </div>
+
+      {/* ── Approval Modal (STEP 6) ── */}
+      <AnimatePresence>
+        {approvalModal && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setApprovalModal(null)}>
+            <motion.div
+              variants={scaleUpVariant}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              onClick={(e) => e.stopPropagation()}
+              style={{ width: '100%', maxWidth: 540, background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, boxShadow: '0 32px 80px rgba(0,0,0,0.7)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}
+            >
+              <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Review Provider Profile</h2>
+                  <p style={{ fontSize: 13, color: '#94a3b8' }}>Approve or reject this provider's application.</p>
+                </div>
+                <button onClick={() => setApprovalModal(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><X size={20} /></button>
+              </div>
+
+              <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {/* Profile Header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  {approvalModal.profile_img_url ? (
+                    <img src={`http://localhost:8000/${approvalModal.profile_img_url}`} alt="Avatar" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.1)' }} />
+                  ) : (
+                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg, #eb5e28, #f59e0b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, color: '#fff', fontWeight: 700 }}>
+                      {approvalModal.name[0]}
+                    </div>
+                  )}
+                  <div>
+                    <h3 style={{ fontSize: 18, fontWeight: 700, color: '#f1f5f9' }}>{approvalModal.name}</h3>
+                    <p style={{ fontSize: 13, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 5 }}><User size={12} /> {approvalModal.email}</p>
+                  </div>
+                </div>
+
+                {/* Details Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div>
+                    <p style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Service Provided</p>
+                    <p style={{ fontSize: 14, color: '#f1f5f9', fontWeight: 500 }}>{approvalModal.service}</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Experience</p>
+                    <p style={{ fontSize: 14, color: '#f1f5f9', fontWeight: 500 }}>{approvalModal.experience}</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Hourly Rate</p>
+                    <p style={{ fontSize: 14, color: '#f1f5f9', fontWeight: 500 }}>₹{approvalModal.charges_per_hour}/hr</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Service Zip Code</p>
+                    <p style={{ fontSize: 14, color: '#f1f5f9', fontWeight: 500 }}>{approvalModal.service_area_zip?.[0] || 'N/A'}</p>
+                  </div>
+                </div>
+
+                {/* ID Document Link */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                   <p style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9' }}>Uploaded Legal ID / Proof Document</p>
+                   {approvalModal.doc_url ? (
+                     <a href={`http://localhost:8000/${approvalModal.doc_url}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 10, color: '#60a5fa', fontSize: 13, textDecoration: 'none', width: 'max-content' }}>
+                       <FileText size={16} /> View Document <ExternalLink size={14} />
+                     </a>
+                   ) : (
+                     <p style={{ fontSize: 13, color: '#ef4444' }}>No document found</p>
+                   )}
+                </div>
+
+              </div>
+
+              <div style={{ padding: '20px 24px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                <button type="button" onClick={() => handleApproveReject(approvalModal.id, 'reject')} disabled={approvalLoading} className="pv-btn pv-btn-danger">
+                  {approvalLoading ? <Loader2 className="al-spin" size={16} /> : '✗ Reject'}
+                </button>
+                <button type="button" onClick={() => handleApproveReject(approvalModal.id, 'approve')} disabled={approvalLoading} className="pv-btn pv-btn-success" style={{ background: '#22c55e', color: '#fff' }}>
+                  {approvalLoading ? <Loader2 className="al-spin" size={16} /> : '✓ Accept'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </motion.div>
   );
 }

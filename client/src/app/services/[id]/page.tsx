@@ -8,7 +8,7 @@ import Header from '@/components/Header/Header';
 import Footer from '@/components/Footer/Footer';
 import { useUserStore } from '@/store/userStore';
 import toast from 'react-hot-toast';
-import '../shared.css';
+import '../../shared.css';
 import './ServiceDetail.css';
 
 interface Service {
@@ -53,7 +53,12 @@ export default function ServiceDetail() {
         const provRes = await api.get(`/service-provider/all`);
         const allProviders = provRes.data.data || provRes.data;
         if (Array.isArray(allProviders)) {
-          setProviders(allProviders.filter((p: Provider) => p.service_id === id && p.isAvailable !== false));
+          setProviders(allProviders.filter((p: any) => 
+            p.service_id === id && 
+            p.isAvailable !== false &&
+            p.status === 'approved' &&
+            p.isProfileCompleted === true
+          ));
         }
       } catch (error) {
         console.error('Error fetching service:', error);
