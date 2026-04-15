@@ -15,4 +15,10 @@ export const providerApi = {
     const res = await apiClient.get('/service-provider');
     return res.data;
   },
+  completeProfile: async (formData: FormData) => {
+    const res = await apiClient.patch('/service-provider/complete-profile', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  }
 };

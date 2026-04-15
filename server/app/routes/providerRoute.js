@@ -8,20 +8,19 @@ const userController = require("../controllers/userController");
 
 const Router = express.Router();
 
-// Auth
-Router.post("/register", Upload.single("document"), ProviderAuthController.providerRegister);
+// ── Auth (no file upload at registration anymore) ──
+Router.post("/register", ProviderAuthController.providerRegister);
 Router.post("/login", ProviderAuthController.providerLogin);
 Router.patch("/password", userAuthCheck(['provider']), userController.updatePassword);
 
-// All 
+// ── All providers ──
 Router.get("/", userAuthCheck(['admin']), providerController.getAllProvider);
 Router.get("/:id", userAuthCheck(['admin', 'provider']), providerController.getProviderById);
-
 
 Router.put("/:id", userAuthCheck(['provider']), providerController.updateProvider);
 Router.delete("/:id", userAuthCheck(['admin', 'provider']), providerController.deleteProvider);
 
-// Status 
+// ── Status / Approval ──
 Router.patch("/approve/:id/:status", userAuthCheck(['admin']), providerController.approveProvider);
 Router.patch("/available-status/:id", userAuthCheck(['provider']), providerController.availableUnavailableProvider);
 Router.patch("/:id", userAuthCheck(['admin']), providerController.patchProviderStatus);

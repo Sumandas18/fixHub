@@ -9,6 +9,7 @@ const userController = require("../controllers/userController");
 const Router = express.Router();
 
 Router.post('/add', userAuthCheck(['provider']), UploadProfilePic.single('profile-pic'), serviceProviderController.addServiceProvider);
+Router.patch('/complete-profile', userAuthCheck(['provider']), UploadProfilePic.single('profile-pic'), serviceProviderController.completeProfile);
 
 Router.get('/all', serviceProviderController.getAllServiceProvider);
 Router.get('/', userAuthCheck(['admin', 'provider']), serviceProviderController.getProviderORServiceWiseServiceProvider);

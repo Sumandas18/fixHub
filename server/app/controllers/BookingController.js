@@ -217,7 +217,7 @@ class BookingController {
           message: "Status not available",
         });
       }
-      const booking = await bookingModel.findById(booking_id);
+      const booking = await bookingModel.findById(booking_id).populate('customer_id');
 
       if (!booking) {
         return res.status(StatusCode.NOT_FOUND).json({
@@ -232,7 +232,7 @@ class BookingController {
         const otpObj = new serviceOTPModel({ bookingId: booking._id, otp });
         await otpObj.save();
 
-        await sendOTPMails({ user: null /* need user obj in real implementation */, booking, otp, type: "taskComplete" });
+        sendOTPMails({ user: booking.customer_id, booking, otp, type: "taskComplete" }).catch(console.error);
 
         return res.status(StatusCode.SUCCESS).json({
           success: true,
@@ -245,10 +245,10 @@ class BookingController {
         await booking.save();
 
         if (status == "cancelled") {
-          await sendOTPMails({ user: null, booking, reason, type: "cancelBooking" });
+          sendOTPMails({ user: booking.customer_id, booking, reason, type: "cancelBooking" }).catch(console.error);
         }
         if (status == "confirmed") {
-          await sendOTPMails({ user: null, booking, type: "confirmBooking" });
+          sendOTPMails({ user: booking.customer_id, booking, type: "confirmBooking" }).catch(console.error);
         }
 
         return res.status(StatusCode.SUCCESS).json({
@@ -382,7 +382,7 @@ class BookingController {
           message: "Booking ID is required",
         });
       }
-      const booking = await bookingModel.findById(bookingId);
+      const booking = await bookingModel.findById(bookingId).populate('customer_id');
 
       if (!booking) {
         return res.status(StatusCode.NOT_FOUND).json({
@@ -404,8 +404,7 @@ class BookingController {
         const otpObj = new serviceOTPModel({ bookingId: booking._id, otp });
         await otpObj.save();
 
-        const resendUser = { user_email: req.user?.user_email || '', user_name: req.user?.user_name || 'User' };
-        await sendOTPMails({ user: resendUser, booking, otp, type: "resendBookingOTP" });
+        sendOTPMails({ user: booking.customer_id, booking, otp, type: "resendBookingOTP" }).catch(console.error);
 
         return res.status(StatusCode.SUCCESS).json({
           success: true,
