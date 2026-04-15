@@ -91,6 +91,8 @@ class ProviderAuthController {
             });
 
         } catch (error) {
+            console.log(error);
+            
             return res.status(StatusCode.SERVER_ERROR).json({
                 success: false,
                 message: error.message,

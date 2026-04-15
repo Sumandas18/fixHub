@@ -11,7 +11,7 @@ export default function ProviderPendingPage() {
 
   const handleLogout = () => {
     logout();
-    router.push('/login');
+    router.push('/provider/login');
   };
 
   return (

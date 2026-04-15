@@ -75,6 +75,7 @@ class AdminAuthController {
             });
         }
         catch (err) {
+            // console.log(err)
             return res.status(StatusCode.SERVER_ERROR).json({
                 success: false,
                 message: err.message

@@ -281,10 +281,12 @@ class UserController {
                 });
             }
 
+            const userDetails = await userModel.findById(user.user_id);
+
             return res.status(StatusCode.SUCCESS).json({
                 success: true,
                 message: "Logged profile data",
-                data: user
+                data: userDetails
             });
         }
         catch (error) {

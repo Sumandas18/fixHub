@@ -6,24 +6,24 @@ const userSchema = new Schema(
     {
         user_name: {
             type: String,
-            required: true
+            require: true
         },
         user_email: {
             type: String,
-            required: true,
+            require: true,
             unique: true,
             lowercase: true,
             trim: true
         },
         user_password: {
             type: String,
-            required: true
+            require: true
         },
         user_role: {
             type: String,
             enum: ["admin", "provider", "customer"],
             default: "customer",
-            required: true
+            require: true
         },
         user_contact: {
             type: String
@@ -54,7 +54,8 @@ const userSchema = new Schema(
                 type: String
             },
             pinCode: {
-                type: String
+                type: String,
+                require: true
             },
             country: {
                 type: String,

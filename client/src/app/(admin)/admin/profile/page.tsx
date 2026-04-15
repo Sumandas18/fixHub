@@ -24,7 +24,7 @@ export default function AdminProfilePage() {
       setProfile({
         name:     user.name || (user as any).user_name || 'Admin User',
         email:    user.email || (user as any).user_email || 'No email',
-        verified: (user as any).isVerified || false,
+        verified: (user as any).isVerified || true,
       });
     }
   }, [user]);

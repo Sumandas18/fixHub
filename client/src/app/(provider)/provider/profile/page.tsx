@@ -27,7 +27,7 @@ export default function ProviderProfilePage() {
       setProfile({
         name: user.name || user.user_name || 'Provider User',
         email: user.email || user.user_email || 'No email provided',
-        verified: user.isVerified || false,
+        verified: user.isVerified || true,
       });
     }
   }, [user]);
