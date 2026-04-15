@@ -108,7 +108,7 @@ class UserController {
             }
 
             const checkOTP = await otpModel.findOne({ userId: user._id });
-
+console.log(user,checkOTP)
             if (!checkOTP) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,

@@ -73,7 +73,7 @@ class ProviderAuthController {
                 user_contact,
                 user_role: "provider",
                 doc_url: req.file.path,
-                user_address: defaultAddr,
+                // user_address: defaultAddr,
             });
 
             // ── Create placeholder service-provider record (incomplete) ──

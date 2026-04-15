@@ -32,8 +32,13 @@ class ServiceProviderController {
                 });
             }
 
+            if (typeof service_area_zip === "string") {
+                service_area_zip = [service_area_zip];
+            }
+            
             const { data, error } = createServiceProviderValidation.validate({ service_area_zip, experience, charges_per_hour })
             if (error) {
+                console.log(error)
                 return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
                     message: error.details.map(err => err.message)
@@ -45,18 +50,24 @@ class ServiceProviderController {
                 profile_img_url = req.file.path;
             }
 
-            const serviceProviderObj = new serviceProviderModel({
-                provider_id: provider.user_id, service_id, service_area_zip, profile_img, profile_img_url, experience, charges_per_hour
-            });
+            const existingServiceProvider = await serviceProviderModel.findOne({ provider_id: provider.user_id });
+            console.log('provider', existingServiceProvider);
 
-            const serviceProvider = await serviceProviderObj.save();
+            existingServiceProvider.service_id = service_id;
+            existingServiceProvider.service_area_zip = service_area_zip;
+            existingServiceProvider.profile_img = profile_img;
+            existingServiceProvider.profile_img_url = profile_img_url;
+            existingServiceProvider.experience = experience;
+            existingServiceProvider.charges_per_hour = charges_per_hour;
 
-            await sendOTPMails({ user, provider: serviceProvider, type: "providerStatus" });
+            await existingServiceProvider.save();
+
+            // await sendOTPMails({ user, provider: serviceProvider, type: "providerStatus" });
 
             return res.status(StatusCode.CREATED).json({
                 success: true,
                 message: "Service added successfully",
-                data: serviceProvider
+                // data: serviceProvider
             });
         }
         catch (err) {
@@ -100,8 +111,8 @@ class ServiceProviderController {
 
             // The profile should already exist from registration
             const serviceProvider = await serviceProviderModel.findOneAndUpdate(
-                { provider_id }, 
-                serviceProviderObj, 
+                { provider_id },
+                serviceProviderObj,
                 { new: true }
             );
 
@@ -155,7 +166,7 @@ class ServiceProviderController {
             // Default to empty array — GET requests carry no body,
             // so provider_id / service_id may both be absent.
             let fetchServiceProvider = [];
-            
+
             // Handle null provider by checking req.user if it is a provider
             let provider_id = req.user?.user_role === 'provider' ? (req.user.user_id || req.user._id) : (req.query?.provider_id || req.body?.provider_id);
             let service_id = req.query?.service_id || req.body?.service_id;
