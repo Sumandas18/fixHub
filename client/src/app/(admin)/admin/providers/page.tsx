@@ -9,8 +9,8 @@ import { containerVariants, fadeUpVariant } from '@/lib/animations';
 
 export default function AdminProvidersPage() {
   const [providers, setProviders] = useState<any[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [search, setSearch]       = useState('');
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,6 +49,7 @@ export default function AdminProvidersPage() {
     (p.email || '').toLowerCase().includes(search.toLowerCase())
   );
 
+
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
       <div className="dashboard-page-header">
@@ -85,8 +86,8 @@ export default function AdminProvidersPage() {
                 <th>Email</th>
                 <th>Contact</th>
                 <th>Experience</th>
-                <th>Availability</th>
                 <th>Approval</th>
+                <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -104,42 +105,63 @@ export default function AdminProvidersPage() {
                   <td>
                     <div className="td-name">
                       <div className="td-avatar">{(p.name || 'P')[0].toUpperCase()}</div>
-                      <span style={{ fontWeight: 600, color: '#f1f5f9' }}>{p.name || '—'}</span>
+                      <span style={{ fontWeight: 600, color: '#f1f5f9' }}>{p.user_name || '—'}</span>
                     </div>
                   </td>
-                  <td style={{ color: '#94a3b8' }}>{p.email || '—'}</td>
-                  <td style={{ color: '#94a3b8' }}>{p.contact || '—'}</td>
-                  <td style={{ color: '#94a3b8' }}>{p.experience || '—'}</td>
+                  <td style={{ color: '#94a3b8' }}>{p.user_email || '—'}</td>
+                  <td style={{ color: '#94a3b8' }}>{p.user_contact || '—'}</td>
+                  <td style={{ color: '#94a3b8' }}>{p.service.experience || '—'} yr</td>
                   <td>
-                    <span className={`badge ${p.isAvailable ? 'active' : 'pending'}`}>
-                      {p.isAvailable ? 'Available' : 'Unavailable'}
+                    <span className={`badge ${p.isApproved ? 'confirmed' : 'pending'}`}>
+                      {p.service.status.charAt(0).toUpperCase() + p.service.status.slice(1).toLowerCase()}
                     </span>
                   </td>
                   <td>
-                    <span className={`badge ${p.isApproved ? 'confirmed' : 'pending'}`}>
-                      {p.isApproved ? 'Approved' : 'Pending'}
+                    <span className={`badge ${p.isAvailable ? 'active' : 'pending'}`}>
+                      {p.service.status == 'pending' ? '' : !p.isBlocked ? 'Active' : 'Block'}
                     </span>
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      {!p.isApproved && (
-                        <button
-                          className="btn btn-success btn-sm"
-                          disabled={actionLoading === p._id + 'approve'}
-                          onClick={() => handleApprove(p._id, 'approve')}
-                        >
-                          <CheckCircle size={12} />
-                          {actionLoading === p._id + 'approve' ? '...' : 'Approve'}
-                        </button>
+                      {p.service.status == 'pending' ? (
+                        <>
+                          <button
+                            className="btn btn-success btn-sm"
+                            disabled={actionLoading === p._id + 'approve'}
+                            onClick={() => handleApprove(p._id, 'approve')}
+                          >
+                            <CheckCircle size={12} />
+                            {actionLoading === p._id + 'approve' ? '...' : 'Approve'}
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            disabled={actionLoading === p._id + 'reject'}
+                            onClick={() => handleApprove(p._id, 'reject')}
+                          >
+                            <XCircle size={12} />
+                            {actionLoading === p._id + 'reject' ? '...' : 'Reject'}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            className="btn btn-success btn-sm"
+                            disabled={actionLoading === p._id + 'approve'}
+                            onClick={() => handleApprove(p._id, 'approve')}
+                          >
+                            <CheckCircle size={12} />
+                            unblock
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            disabled={actionLoading === p._id + 'reject'}
+                            onClick={() => handleApprove(p._id, 'reject')}
+                          >
+                            <XCircle size={12} />
+                            Block
+                          </button>
+                        </>
                       )}
-                      <button
-                        className="btn btn-danger btn-sm"
-                        disabled={actionLoading === p._id + 'reject'}
-                        onClick={() => handleApprove(p._id, 'reject')}
-                      >
-                        <XCircle size={12} />
-                        {actionLoading === p._id + 'reject' ? '...' : 'Reject'}
-                      </button>
                     </div>
                   </td>
                 </tr>

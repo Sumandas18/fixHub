@@ -7,7 +7,27 @@ class ProviderController {
 
   async getAllProvider(req, res) {
     try {
-      const providers = await userModel.find({ user_role: "provider" });
+
+      // const providers = await userModel.find({ user_role: "provider" });
+
+      const providers = await userModel.aggregate([
+        {
+          $match: {
+            user_role: "provider"
+          }
+        },
+        {
+          $lookup: {
+            from: "serviceproviders",
+            localField: "_id",
+            foreignField: "provider_id",
+            as: "service"
+          }
+        },
+        {
+          $unwind: "$service"
+        }
+      ]);
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,
