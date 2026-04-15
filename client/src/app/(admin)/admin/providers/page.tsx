@@ -70,6 +70,7 @@ export default function AdminProvidersPage() {
     (p.user_name || '').toLowerCase().includes(search.toLowerCase()) ||
     (p.user_email || '').toLowerCase().includes(search.toLowerCase())
   );
+console.log(docModal,filtered);
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
