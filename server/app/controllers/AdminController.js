@@ -267,7 +267,7 @@
 
 const bcrypt = require("bcryptjs");
 const StatusCode = require("../utils/statusCode");
-const adminModel = require("../models/adminModel"); // ✅ FIXED
+const adminModel = require("../models/adminModel");
 const otpModel = require("../models/otpModel");
 const passwordValidation = require("./../utils/validation/checkPasswordValidation");
 const sendOTPMails = require("../utils/sendMail");
@@ -350,7 +350,7 @@ class AdminController {
         });
       }
 
-      const admin = await adminModel.findOne({ user_email: email }); // ✅ FIX
+      const admin = await adminModel.findOne({ user_email: email });
 
       if (!admin) {
         return res.status(400).json({
@@ -447,7 +447,7 @@ class AdminController {
 
       const admin = await adminModel.findById(adminId);
 
-      const isMatch = await bcrypt.compare(oldPassword, admin.user_password); // ✅ FIX
+      const isMatch = await bcrypt.compare(oldPassword, admin.user_password);
 
       if (!isMatch) {
         return res.status(400).json({

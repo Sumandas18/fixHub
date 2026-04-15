@@ -42,7 +42,7 @@ const navItems = [
   {
     section: 'Contact',
     links: [
-      { label: 'Message', href: '/admin/message', icon: MessageSquareMore },
+      { label: 'Message', href: '/admin/contact', icon: MessageSquareMore },
     ]
   },
   {

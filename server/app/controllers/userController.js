@@ -80,7 +80,6 @@ class UserController {
                 });
             }
 
-            // Guard against invalid ObjectId causing a Mongoose CastError -> 500
             if (userId && !require('mongoose').Types.ObjectId.isValid(userId)) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
@@ -108,7 +107,6 @@ class UserController {
                 });
             }
 
-            // Fetch stored OTP record for this user
             const checkOTP = await otpModel.findOne({ userId: user._id });
 
             if (!checkOTP) {
@@ -118,7 +116,6 @@ class UserController {
                 });
             }
 
-            // ── Compare OTP — coerce both sides to string to avoid type mismatch ──
             if (String(checkOTP.otp) !== String(otp)) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
@@ -126,7 +123,6 @@ class UserController {
                 });
             }
 
-            // ── Strict 5-minute expiry check ──
             const diffMins = (new Date() - new Date(checkOTP.createdAt)) / 60000;
             if (diffMins > 5) {
                 await otpModel.deleteMany({ userId: user._id });
@@ -136,7 +132,6 @@ class UserController {
                 });
             }
 
-            // ── All checks passed — mark user as verified ──
             user.isVerified = true;
             await user.save();
             await otpModel.deleteMany({ userId: user._id });

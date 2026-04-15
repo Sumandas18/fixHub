@@ -9,6 +9,7 @@ const tokenModel = require("../../models/tokenModel");
 
 const sendOTPMails = require("../../utils/sendMail");
 const generateOTP = require("../../helper/generateOTP");
+const checkCreateProviderValidate = require("../../utils/validation/create/checkCreateProviderValidation");
 
 class ProviderAuthController {
 
@@ -21,6 +22,16 @@ class ProviderAuthController {
             if (!user_name || !user_email || !user_password || !user_contact) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
+                    message: "Name, email, password, and contact are required",
+                });
+            }
+
+            const { error } = checkCreateProviderValidate.validate(req.body);
+
+            if (error) {
+                return res.status(StatusCode.BAD_REQUEST).json({
+                    success: false,
+                    message: error.details.map((err) => err.message),
                     message: "Name, email, password, and contact are required",
                 });
             }
@@ -57,6 +68,7 @@ class ProviderAuthController {
                 user_password: hashedPassword,
                 user_contact,
                 user_role: "provider",
+                doc_url: req.file.path,
                 user_address: defaultAddr,
             });
 

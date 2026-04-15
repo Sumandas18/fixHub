@@ -9,7 +9,7 @@ const userController = require("../controllers/userController");
 const Router = express.Router();
 
 // ── Auth (no file upload at registration anymore) ──
-Router.post("/register", ProviderAuthController.providerRegister);
+Router.post("/register",Upload.single("document"), ProviderAuthController.providerRegister);
 Router.post("/login", ProviderAuthController.providerLogin);
 Router.patch("/password", userAuthCheck(['provider']), userController.updatePassword);
 
