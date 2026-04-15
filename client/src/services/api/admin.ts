@@ -46,6 +46,11 @@ export const adminApi = {
     return res.data;
   },
 
+  setServiceStatus: async (id: string, status: 'active' | 'inactive') => {
+    const res = await apiClient.patch(`/service/status/${id}`, { status });
+    return res.data;
+  },
+
   // ── Service-Provider links (admin approval queue) ──────────────────────
   getServiceProviders: async () => {
     const res = await apiClient.get('/service-provider/all');

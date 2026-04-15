@@ -8,14 +8,14 @@ import { motion } from 'framer-motion';
 import { containerVariants, fadeUpVariant } from '@/lib/animations';
 import { CheckCircle, XCircle } from 'lucide-react';
 
-const STATUS_TABS = ['All', 'pending', 'confirmed', 'in-progress', 'completed', 'cancelled'];
+const STATUS_TABS = ['All', 'pending', 'accepted', 'rejected', 'confirmed', 'completed', 'cancelled'];
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState('');
   const [tab, setTab]           = useState('All');
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null); // kept for future extension
 
   useEffect(() => {
     const load = async () => {
@@ -31,27 +31,14 @@ export default function AdminBookingsPage() {
     load();
   }, []);
 
-  const handleUpdateBooking = async (id: string, status: 'accepted' | 'rejected') => {
-    setActionLoading(id + status);
-    try {
-      await adminApi.setBookingStatus(id, status);
-      setBookings((prev) =>
-        prev.map((b) => (b._id === id ? { ...b, status } : b))
-      );
-      toast.success(`Booking ${status} successfully`);
-    } catch {
-      toast.error(`Failed to ${status} booking`);
-    } finally {
-      setActionLoading(null);
-    }
-  };
+  // Admin only views bookings — accept/reject is done by providers
 
   const filtered = bookings
     .filter((b) => tab === 'All' || b.status === tab)
     .filter((b) => {
       const q = search.toLowerCase();
       return (
-        (b.customer_id?.name || '').toLowerCase().includes(q) ||
+        (b.customer_id?.user_name || '').toLowerCase().includes(q) ||
         (b.service_provider_id?.service_id?.service_name || '').toLowerCase().includes(q) ||
         b._id.toLowerCase().includes(q)
       );
@@ -119,7 +106,6 @@ export default function AdminBookingsPage() {
                 <th>Date & Time</th>
                 <th>Price/hr</th>
                 <th>Status</th>
-                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -137,8 +123,8 @@ export default function AdminBookingsPage() {
                   </td>
                   <td>
                     <div className="td-name">
-                      <div className="td-avatar">{(b.customer_id?.name || 'U')[0].toUpperCase()}</div>
-                      <span style={{ color: '#f1f5f9', fontWeight: 600 }}>{b.customer_id?.name || '—'}</span>
+                      <div className="td-avatar">{(b.customer_id?.user_name || 'U')[0].toUpperCase()}</div>
+                      <span style={{ color: '#f1f5f9', fontWeight: 600 }}>{b.customer_id?.user_name || '—'}</span>
                     </div>
                   </td>
                   <td style={{ color: '#94a3b8' }}>
@@ -161,28 +147,7 @@ export default function AdminBookingsPage() {
                     <span className={`badge ${b.status}`}>{b.status}</span>
                   </td>
                   <td>
-                    {b.status === 'pending' && (
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button
-                          className="btn btn-success btn-sm"
-                          disabled={actionLoading === b._id + 'accepted'}
-                          onClick={() => handleUpdateBooking(b._id, 'accepted')}
-                          title="Accept"
-                          style={{ padding: '4px 8px' }}
-                        >
-                          <CheckCircle size={14} />
-                        </button>
-                        <button
-                          className="btn btn-danger btn-sm"
-                          disabled={actionLoading === b._id + 'rejected'}
-                          onClick={() => handleUpdateBooking(b._id, 'rejected')}
-                          title="Reject"
-                          style={{ padding: '4px 8px' }}
-                        >
-                          <XCircle size={14} />
-                        </button>
-                      </div>
-                    )}
+                    <span style={{ fontSize: 12, color: '#64748b', fontStyle: 'italic' }}>Managed by provider</span>
                   </td>
                 </tr>
               ))}

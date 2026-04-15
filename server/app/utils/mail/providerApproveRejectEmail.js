@@ -12,12 +12,12 @@ module.exports = (user, provider) => {
             footer: 'You can now log in and start accepting service requests.'
         },
         rejected: {
-            title: 'Provider Rejected',
+            title: 'Provider Application Rejected',
             subtitle: 'Your provider account has been rejected',
-            message: 'Unfortunately, your provider profile could not be approved at this time.',
+            message: 'Your provider account has been rejected by admin.',
             gradient: '#dc2626,#ef4444',
             color: '#dc2626',
-            footer: 'You may update your profile and apply again.'
+            footer: 'You may contact support or re-apply after making necessary changes.'
         },
         pending: {
             title: 'Account Under Review',

@@ -15,7 +15,12 @@ const passwordChangedEmail = require("./mail/passwordChangedEmail");
 const sendOTPMails = async ({ user, provider, booking, isBlocked, reason, type, otp, contact }) => {
     try {
         let subject, html;
-        const email = user.user_email || contact.email;
+        const email = user?.user_email || contact?.email;
+
+        if (!email) {
+            console.error('[sendMail] No recipient email found — skipping mail send.');
+            return;
+        }
 
         if (type == "newRegister") {
             subject = "Email verification";
@@ -29,7 +34,7 @@ const sendOTPMails = async ({ user, provider, booking, isBlocked, reason, type, 
             subject = provider.status === "approved"
                 ? "Provider Account Approved"
                 : provider.status === "rejected"
-                    ? "Provider Account Rejected"
+                    ? "Your FixHub Provider Application Status"
                     : "Provider Account Under Review";
             html = providerApproveRejectEmail(user, provider);
         }

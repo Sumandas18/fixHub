@@ -17,9 +17,9 @@ class UserController {
             const { userId, email } = req.body;
 
             if (!userId && !email) {
-                return res.status(StatusCode.BAD_GATEWAY).json({
+                return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
-                    message: "All fields are required"
+                    message: "userId or email is required"
                 })
             }
 
@@ -31,14 +31,14 @@ class UserController {
             }
 
             if (!user) {
-                return res.status(StatusCode.BAD_GATEWAY).json({
+                return res.status(StatusCode.NOT_FOUND).json({
                     success: false,
                     message: "User not found"
                 })
             }
             else {
                 if (user.isVerified) {
-                    return res.status(StatusCode.BAD_GATEWAY).json({
+                    return res.status(StatusCode.BAD_REQUEST).json({
                         success: false,
                         message: "User already verified"
                     })

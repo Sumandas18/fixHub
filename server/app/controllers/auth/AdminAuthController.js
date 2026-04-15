@@ -108,9 +108,9 @@ class AdminAuthController {
                     });
                 }
                 else if (existAdmin.isBlocked) {
-                    return res.status(StatusCode.BAD_GATEWAY).json({
+                    return res.status(StatusCode.FORBIDDEN).json({
                         success: false,
-                        message: "Account is blocked"
+                        message: "Your account is blocked by admin"
                     });
                 }
                 else {

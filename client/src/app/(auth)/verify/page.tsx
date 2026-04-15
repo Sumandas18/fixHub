@@ -47,15 +47,23 @@ function VerifyForm() {
       toast.error('Please enter the 4-digit OTP');
       return;
     }
-    if (!userId) {
+
+    // Guard against 'undefined' string from bad query params
+    const safeUserId = (userId && userId !== 'undefined') ? userId : undefined;
+    const safeEmail  = (email  && email  !== 'undefined') ? email  : undefined;
+
+    if (!safeUserId && !safeEmail) {
       toast.error('Verification details missing. Please register again.');
       return;
     }
 
     setLoading(true);
     try {
-      // The API endpoint handles user verify
-      const res = await api.post('/user/verify', { userId, otp });
+      const payload: Record<string, string> = { otp };
+      if (safeUserId) payload.userId = safeUserId;
+      if (safeEmail)  payload.email  = safeEmail;
+
+      const res = await api.post('/user/verify', payload);
       if (res.data.success || res.status === 200) {
         toast.success('Email verified successfully! You can now log in.');
         router.push('/login');
@@ -70,9 +78,14 @@ function VerifyForm() {
   };
 
   const handleResend = async () => {
-    if (!userId) return;
+    const safeUserId = (userId && userId !== 'undefined') ? userId : undefined;
+    const safeEmail  = (email  && email  !== 'undefined') ? email  : undefined;
+    if (!safeUserId && !safeEmail) return;
     try {
-      const res = await api.post('/user/resend', { userId });
+      const payload: Record<string, string> = {};
+      if (safeUserId) payload.userId = safeUserId;
+      if (safeEmail)  payload.email  = safeEmail;
+      const res = await api.post('/user/resend', payload);
       if (res.data.success || res.status === 200) {
         toast.success('OTP resent successfully!');
       }

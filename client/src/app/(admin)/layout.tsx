@@ -14,7 +14,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     try {
       const raw = localStorage.getItem('auth-storage');
       if (!raw) {
-        router.replace('/admin/login');
+        router.push('/admin/login');
         return;
       }
       const parsed = JSON.parse(raw);
@@ -22,10 +22,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const role  = parsed?.state?.role;
 
       if (!token || role !== 'admin') {
-        router.replace('/admin/login');
+        router.push('/admin/login');
       }
     } catch {
-      router.replace('/admin/login');
+      router.push('/admin/login');
     }
   }, [router]);
 

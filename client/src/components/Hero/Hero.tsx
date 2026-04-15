@@ -4,7 +4,9 @@ import { useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import { usePathname } from 'next/navigation';
 import { ArrowRight, Star, Zap, Shield, ChevronDown } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const fadeUp = {
   hidden:   { opacity: 0, y: 30 },
@@ -16,6 +18,15 @@ const stagger = {
 };
 
 export default function Hero() {
+  const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setMounted(true);
+  }, [pathname]);
+
+  if (!mounted) return null;
+
   return (
     <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', overflow: 'hidden', background: '#0B0F1A', paddingTop: 80, paddingBottom: 48 }}>
 
@@ -140,6 +151,7 @@ export default function Hero() {
           >
             <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 24px rgba(59,130,246,0.1)', background: 'rgba(0,0,0,0.35)', position: 'relative' }}>
               <video
+                key={pathname}
                 autoPlay muted loop playsInline
                 style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }}
               >

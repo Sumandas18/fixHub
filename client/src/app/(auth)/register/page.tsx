@@ -87,7 +87,11 @@ export default function RegisterPage() {
     api.get('/service')
       .then(res => {
         const data = res.data.data || res.data.services || res.data;
-        if (Array.isArray(data)) setServices(data);
+        if (Array.isArray(data)) {
+          // Only show active services in provider registration dropdown
+          const activeServices = data.filter((s: any) => s.is_active !== false);
+          setServices(activeServices);
+        }
       })
       .catch(() => {})
       .finally(() => setServicesLoading(false));

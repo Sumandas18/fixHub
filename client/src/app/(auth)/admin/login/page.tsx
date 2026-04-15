@@ -38,7 +38,7 @@ export default function AdminLoginPage() {
     try {
       await login({ email: form.email, password: form.password }, 'admin');
       toast.success('Welcome back, Admin!');
-      router.replace('/admin/dashboard');
+      router.push('/admin/dashboard');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Invalid credentials');
     }

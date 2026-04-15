@@ -82,15 +82,20 @@ export default function ServicesPage() {
     api.get('/service')
       .then(res => {
         const data = res.data.data || res.data.services || res.data;
-        if (Array.isArray(data) && data.length >= 6) {
-          setServices(data);
-        } else if (Array.isArray(data) && data.length > 0) {
-          // Pad with fallback if API returns less than 6
-          const merged = [...data];
-          FALLBACK.forEach(f => {
-            if (merged.length < 6) merged.push(f);
-          });
-          setServices(merged);
+        if (Array.isArray(data)) {
+          // Only show active services to customers
+          const activeData = data.filter((s: any) => s.is_active !== false);
+          if (activeData.length >= 6) {
+            setServices(activeData);
+          } else if (activeData.length > 0) {
+            const merged = [...activeData];
+            FALLBACK.forEach(f => {
+              if (merged.length < 6) merged.push(f);
+            });
+            setServices(merged);
+          } else {
+            setServices(FALLBACK);
+          }
         } else {
           setServices(FALLBACK);
         }

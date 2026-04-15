@@ -149,13 +149,19 @@ export default function AdminServicesPage() {
     }
   };
 
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
   /* ── toggle ── */
-  const handleToggle = async (id: string) => {
+  const handleToggle = async (id: string, currentActive: boolean) => {
+    setTogglingId(id);
     try {
       await adminApi.toggleService(id);
       setServices(prev => prev.map(s => s._id === id ? { ...s, is_active: !s.is_active } : s));
+      toast.success(`Service ${currentActive ? 'deactivated' : 'activated'} successfully`);
     } catch {
       toast.error('Failed to toggle service');
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -306,16 +312,40 @@ export default function AdminServicesPage() {
 
                   {/* Status */}
                   <td>
-                    <button
-                      onClick={() => handleToggle(s._id)}
-                      title="Toggle status"
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: 0 }}
-                    >
-                      {s.is_active !== false
-                        ? <><ToggleRight size={18} color="#4ade80" /><span className="badge active">Active</span></>
-                        : <><ToggleLeft size={18} color="#f87171" /><span className="badge blocked">Inactive</span></>
-                      }
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {/* Status badge */}
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        padding: '3px 9px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                        background: s.is_active !== false ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)',
+                        color: s.is_active !== false ? '#4ade80' : '#f87171',
+                        border: `1px solid ${s.is_active !== false ? 'rgba(74,222,128,0.25)' : 'rgba(239,68,68,0.25)'}`,
+                        whiteSpace: 'nowrap'
+                      }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: s.is_active !== false ? '#4ade80' : '#f87171' }} />
+                        {s.is_active !== false ? 'Active' : 'Inactive'}
+                      </span>
+                      {/* Activate / Deactivate button */}
+                      <button
+                        onClick={() => handleToggle(s._id, s.is_active !== false)}
+                        disabled={togglingId === s._id}
+                        style={{
+                          fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 6,
+                          cursor: togglingId === s._id ? 'not-allowed' : 'pointer',
+                          border: s.is_active !== false ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(74,222,128,0.3)',
+                          background: s.is_active !== false ? 'rgba(239,68,68,0.08)' : 'rgba(74,222,128,0.08)',
+                          color: s.is_active !== false ? '#f87171' : '#4ade80',
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          opacity: togglingId === s._id ? 0.6 : 1
+                        }}
+                      >
+                        {togglingId === s._id
+                          ? <Loader2 size={11} className="al-spin" />
+                          : s.is_active !== false ? <ToggleLeft size={13} /> : <ToggleRight size={13} />
+                        }
+                        {s.is_active !== false ? 'Deactivate' : 'Activate'}
+                      </button>
+                    </div>
                   </td>
 
                   {/* Created */}

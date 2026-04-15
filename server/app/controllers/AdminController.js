@@ -296,12 +296,36 @@ class AdminController {
   async deleteAdmin(req, res) {
     try {
       const adminId = req.params.id;
+      const requestingAdminId = req.user?.user_id;
+
+      if (!adminId) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          success: false,
+          message: "Admin ID is required"
+        });
+      }
+
+      // Security: prevent self-deletion
+      if (adminId === String(requestingAdminId)) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          success: false,
+          message: "You cannot delete your own account"
+        });
+      }
+
+      const admin = await adminModel.findById(adminId);
+      if (!admin) {
+        return res.status(StatusCode.NOT_FOUND).json({
+          success: false,
+          message: "Admin not found"
+        });
+      }
 
       await adminModel.findByIdAndDelete(adminId);
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,
-        message: "Admin deleted"
+        message: "Admin deleted successfully"
       });
 
     } catch (error) {
@@ -455,14 +479,32 @@ class AdminController {
 
   async blockUnblockAdmin(req, res) {
     try {
-      const admin = await adminModel.findById(req.params.id);
+      const adminId = req.params.id;
+      const requestingAdminId = req.user?.user_id;
+
+      // Security: prevent self-blocking
+      if (adminId === String(requestingAdminId)) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          success: false,
+          message: "You cannot block your own account"
+        });
+      }
+
+      const admin = await adminModel.findById(adminId);
+
+      if (!admin) {
+        return res.status(StatusCode.NOT_FOUND).json({
+          success: false,
+          message: "Admin not found"
+        });
+      }
 
       admin.isBlocked = !admin.isBlocked;
-
       await admin.save();
 
       return res.json({
         success: true,
+        message: `Admin ${admin.isBlocked ? 'blocked' : 'unblocked'} successfully`,
         isBlocked: admin.isBlocked
       });
 

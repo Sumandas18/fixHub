@@ -53,7 +53,12 @@ class BookingController {
       const bookingObj = new bookingModel(bookingData);
       const booking = await bookingObj.save();
 
-      await sendOTPMails({ user, booking, type: "newBooking" });
+      const customerUser = { user_email: req.user.user_email, user_name: req.user.user_name };
+      try {
+        await sendOTPMails({ user: customerUser, booking, type: "newBooking" });
+      } catch (emailErr) {
+        console.error('[BookingController] newBooking email failed:', emailErr);
+      }
 
       return res.status(StatusCode.CREATED).json({
         success: true,
@@ -99,7 +104,9 @@ class BookingController {
           message: "Unauthorised access"
         })
       }
-      const bookings = await bookingModel.find({ provider_id })
+
+      // Return ALL bookings for this provider (pending, accepted, rejected)
+      const bookings = await bookingModel.find({ service_provider_id: provider_id })
         .populate("customer_id");
 
       return res.status(StatusCode.SUCCESS).json({
@@ -179,7 +186,12 @@ class BookingController {
         booking.status = "cancelled";
         await booking.save();
 
-        await sendOTPMails({ user, booking, type: "cancelBooking" });
+        const cancelUser = { user_email: req.user.user_email, user_name: req.user.user_name };
+        try {
+          await sendOTPMails({ user: cancelUser, booking, type: "cancelBooking" });
+        } catch (emailErr) {
+          console.error('[BookingController] cancelBooking email failed:', emailErr);
+        }
 
         return res.status(StatusCode.SUCCESS).json({
           success: true,
@@ -266,7 +278,7 @@ class BookingController {
         });
       }
 
-      const booking = await bookingModel.findById(booking_id);
+      const booking = await bookingModel.findById(booking_id).populate('customer_id');
 
       if (!booking) {
         return res.status(StatusCode.NOT_FOUND).json({
@@ -277,6 +289,16 @@ class BookingController {
 
       booking.status = status;
       await booking.save();
+
+      try {
+        if (status === 'accepted') {
+          await sendOTPMails({ user: booking.customer_id, booking, type: "confirmBooking" });
+        } else if (status === 'rejected') {
+          await sendOTPMails({ user: booking.customer_id, booking, type: "cancelBooking", reason: "Provider rejected the request" });
+        }
+      } catch (err) {
+        console.error("Error sending booking status email:", err);
+      }
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,
@@ -354,10 +376,10 @@ class BookingController {
 
       const { bookingId } = req.body;
 
-      if (!otp || !bookingId) {
+      if (!bookingId) {
         return res.status(StatusCode.BAD_GATEWAY).json({
           success: false,
-          message: "All fields are required",
+          message: "Booking ID is required",
         });
       }
       const booking = await bookingModel.findById(bookingId);
@@ -382,7 +404,8 @@ class BookingController {
         const otpObj = new serviceOTPModel({ bookingId: booking._id, otp });
         await otpObj.save();
 
-        await sendOTPMails({ user, booking, otp, type: "resendBookingOTP" });
+        const resendUser = { user_email: req.user?.user_email || '', user_name: req.user?.user_name || 'User' };
+        await sendOTPMails({ user: resendUser, booking, otp, type: "resendBookingOTP" });
 
         return res.status(StatusCode.SUCCESS).json({
           success: true,

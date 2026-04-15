@@ -39,7 +39,7 @@ export default function ProviderLoginPage() {
     try {
       await login({ email: form.email, password: form.password }, 'provider');
       toast.success('Welcome back, Provider!');
-      router.replace('/provider/dashboard');
+      router.push('/provider/dashboard');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Invalid credentials');
     }

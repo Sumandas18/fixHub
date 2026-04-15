@@ -5,8 +5,8 @@ import { X, ShieldCheck, RefreshCw, ChevronDown, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 
-const STATUS_OPTIONS = ['pending', 'confirmed', 'in-progress', 'completed', 'cancelled'];
-const TABS = ['All', 'Confirmed', 'In-Progress', 'Completed', 'Cancelled'];
+const STATUS_OPTIONS = ['confirmed', 'in-progress', 'completed', 'cancelled'];
+const TABS = ['All', 'Pending', 'Accepted', 'Confirmed', 'In-Progress', 'Completed', 'Cancelled'];
 
 type Booking = any;
 
@@ -38,14 +38,10 @@ export default function ProviderBookingsPage() {
     fetchBookings();
   }, []);
 
-  // PROVIDER SIDE FILTER: ONLY show accepted / confirmed
-  // Note: if abstract bookings are accepted by admin but lack provider_id, the current backend might not serve them via getProviderBookings unless we update that.
-  // Assuming 'accepted' bookings are served or this provider's bookings are filtered.
-  const providerFilteredBookings = bookings.filter(b => b.status !== 'pending' && b.status !== 'rejected');
-  
+  // Show all bookings — provider needs to see pending ones to accept/reject
   const filtered = activeTab === 'All'
-    ? providerFilteredBookings
-    : providerFilteredBookings.filter((b) => b.status === activeTab.toLowerCase().replace('-', '-'));
+    ? bookings
+    : bookings.filter((b) => b.status === activeTab.toLowerCase());
 
   const openStatusModal = (b: Booking) => {
     setSelectedStatus(b.status === 'accepted' ? 'confirmed' : b.status);
@@ -65,6 +61,21 @@ export default function ProviderBookingsPage() {
       setStatusModal(null);
     } catch {
       toast.error('Failed to update status');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleAcceptReject = async (id: string, status: 'accepted' | 'rejected') => {
+    setActionLoading(true);
+    try {
+      await api.patch(`/booking/${id}`, { status });
+      setBookings((prev) =>
+        prev.map((b) => b._id === id ? { ...b, status } : b)
+      );
+      toast.success(`Booking ${status} successfully`);
+    } catch {
+      toast.error(`Failed to ${status} booking`);
     } finally {
       setActionLoading(false);
     }
@@ -166,9 +177,9 @@ export default function ProviderBookingsPage() {
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div className="pv-avatar" style={{ width: 28, height: 28, fontSize: 12 }}>
-                        {(b.customer_id?.name || 'U')[0].toUpperCase()}
+                        {(b.customer_id?.user_name || 'U')[0].toUpperCase()}
                       </div>
-                      {b.customer_id?.name || 'Customer'}
+                      {b.customer_id?.user_name || 'Customer'}
                     </div>
                   </td>
                   <td>{b.service_id?.service_name || b.service_provider_id?.service_id?.service_name || 'Booked Service'}</td>
@@ -190,19 +201,41 @@ export default function ProviderBookingsPage() {
                   </td>
                   <td>
                     <div className="pv-actions-cell">
-                      <button
-                        className="pv-btn pv-btn-ghost pv-btn-sm"
-                        onClick={() => openStatusModal(b)}
-                      >
-                        <ChevronDown size={13} /> Status
-                      </button>
-                      {!b.otp_verified && b.status !== 'cancelled' && b.status !== 'completed' && (
-                        <button
-                          className="pv-btn pv-btn-otp pv-btn-sm"
-                          onClick={() => openOtpModal(b)}
-                        >
-                          <ShieldCheck size={13} /> OTP
-                        </button>
+                      {b.status === 'pending' ? (
+                        <>
+                          <button
+                            className="pv-btn pv-btn-success pv-btn-sm"
+                            onClick={() => handleAcceptReject(b._id, 'accepted')}
+                            disabled={actionLoading}
+                          >
+                            ✓ Accept
+                          </button>
+                          <button
+                            className="pv-btn pv-btn-danger pv-btn-sm"
+                            onClick={() => handleAcceptReject(b._id, 'rejected')}
+                            disabled={actionLoading}
+                          >
+                            ✗ Reject
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            className="pv-btn pv-btn-ghost pv-btn-sm"
+                            onClick={() => openStatusModal(b)}
+                            disabled={b.status === 'completed' || b.status === 'rejected'}
+                          >
+                            <ChevronDown size={13} /> Status
+                          </button>
+                          {!b.otp_verified && b.status !== 'cancelled' && b.status !== 'completed' && b.status !== 'rejected' && (
+                            <button
+                              className="pv-btn pv-btn-otp pv-btn-sm"
+                              onClick={() => openOtpModal(b)}
+                            >
+                              <ShieldCheck size={13} /> OTP
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   </td>

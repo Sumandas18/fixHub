@@ -103,95 +103,100 @@ class ProviderAuthController {
             const { user_email, user_password } = req.body;
 
             if (!user_email || !user_password) {
-                return res.status(StatusCode.BAD_GATEWAY).json({
+                return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
                     message: "All fields are required",
                 });
             }
 
             const user = await userModel.findOne({ user_email });
-            const providerDetails = await serviceProviderModel.findOne({ provider_id: user._id });
 
-            if (!user || user.user_role != 'provider' || !providerDetails) {
+            if (!user || user.user_role !== 'provider') {
                 return res.status(StatusCode.NOT_FOUND).json({
                     success: false,
                     message: "Provider not found",
                 });
             }
-            else {
-                if (!user.isVerified) {
-                    return res.status(StatusCode.BAD_GATEWAY).json({
+
+            const providerDetails = await serviceProviderModel.findOne({ provider_id: user._id });
+
+            if (!providerDetails) {
+                return res.status(StatusCode.NOT_FOUND).json({
+                    success: false,
+                    message: "Provider profile not found",
+                });
+            }
+
+            if (!user.isVerified) {
+                return res.status(StatusCode.BAD_REQUEST).json({
+                    success: false,
+                    message: "Email not verified yet"
+                });
+            } else if (user.isBlocked) {
+                return res.status(StatusCode.FORBIDDEN).json({
+                    success: false,
+                    message: "Account is blocked"
+                });
+            } else {
+                const isMatch = await bcrypt.compare(user_password, user.user_password);
+                if (!isMatch) {
+                    return res.status(StatusCode.BAD_REQUEST).json({
                         success: false,
-                        message: "Email not verified yet"
-                    });
-                }
-                else if (user.isBlocked) {
-                    return res.status(StatusCode.BAD_GATEWAY).json({
-                        success: false,
-                        message: "Account is blocked"
+                        message: "Invalid password"
                     });
                 }
                 else {
-                    const isMatch = await bcrypt.compare(user_password, user.user_password);
-                    if (!isMatch) {
-                        return res.status(StatusCode.BAD_REQUEST).json({
-                            success: false,
-                            message: "Invalid password"
-                        });
-                    }
-                    else {
-                        const access_token = jwt.sign({
+                    const access_token = jwt.sign({
+                        user_id: user._id,
+                        user_name: user.user_name,
+                        user_email: user.user_email,
+                        user_role: user.user_role,
+                        user_address: user.user_address,
+                        user_contact: user.user_contact
+                    }, process.env.ACCESS_TOKEN_SECRET_KEY, { expiresIn: '1h' });
+
+                    const refresh_token = jwt.sign({
+                        user_id: user._id,
+                        user_name: user.user_name,
+                        user_email: user.user_email,
+                        user_role: user.user_role,
+                        user_address: user.user_address,
+                        user_contact: user.user_contact
+                    }, process.env.REFRESH_TOKEN_SECRET_KEY, { expiresIn: '7d' });
+
+                    const hashedToken = await bcrypt.hash(refresh_token, 10);
+
+                    user.lastLogin = Date.now();
+                    await user.save();
+
+                    const tokenObj = new tokenModel({
+                        userId: user._id,
+                        token: hashedToken
+                    });
+
+                    await tokenObj.save();
+
+                    res.cookie("refresh_token", refresh_token, {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === "production",
+                        sameSite: "strict",
+                        maxAge: 7 * 24 * 60 * 60 * 1000,
+                    });
+
+                    return res.status(StatusCode.SUCCESS).json({
+                        success: true,
+                        message: "Login successful",
+                        data: {
                             user_id: user._id,
                             user_name: user.user_name,
                             user_email: user.user_email,
                             user_role: user.user_role,
                             user_address: user.user_address,
-                            user_contact: user.user_contact
-                        }, process.env.ACCESS_TOKEN_SECRET_KEY, { expiresIn: '1h' });
-
-                        const refresh_token = jwt.sign({
-                            user_id: user._id,
-                            user_name: user.user_name,
-                            user_email: user.user_email,
-                            user_role: user.user_role,
-                            user_address: user.user_address,
-                            user_contact: user.user_contact
-                        }, process.env.REFRESH_TOKEN_SECRET_KEY, { expiresIn: '7d' });
-
-                        const hashedToken = await bcrypt.hash(refresh_token, 10);
-
-                        user.lastLogin = Date.now();
-                        await user.save();
-
-                        const tokenObj = new tokenModel({
-                            userId: user._id,
-                            token: hashedToken
-                        });
-
-                        await tokenObj.save();
-
-                        res.cookie("refresh_token", refresh_token, {
-                            httpOnly: true,
-                            secure: process.env.NODE_ENV === "production",
-                            sameSite: "strict",
-                            maxAge: 7 * 24 * 60 * 60 * 1000,
-                        });
-
-                        return res.status(StatusCode.SUCCESS).json({
-                            success: true,
-                            message: "Login successful",
-                            data: {
-                                user_id: user._id,
-                                user_name: user.user_name,
-                                user_email: user.user_email,
-                                user_role: user.user_role,
-                                user_address: user.user_address,
-                                user_contact: user.user_contact,
-                                providerDetails
-                            },
-                            access_token, refresh_token
-                        });
-                    }
+                            user_contact: user.user_contact,
+                            providerDetails
+                        },
+                        access_token, refresh_token
+                    });
                 }
             }
 

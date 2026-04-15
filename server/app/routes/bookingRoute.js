@@ -18,6 +18,6 @@ Router.put("/status/:id", userAuthCheck(['provider']), bookingController.updateB
 Router.put("/resend-otp", userAuthCheck(['provider']), bookingController.resendBookingOTP);
 Router.put("/verify-otp", userAuthCheck(['provider']), bookingController.verifyBookingOTP);
 
-Router.patch("/:id", userAuthCheck(['admin']), bookingController.patchBookingStatus);
+Router.patch("/:id", userAuthCheck(['provider']), bookingController.patchBookingStatus);
 
 module.exports = Router;

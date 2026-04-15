@@ -168,11 +168,58 @@ class ServiceController {
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,
-        message: `Service ${service.is_active ? "activated" : "deactivated"}`
+        message: `Service ${service.is_active ? "activated" : "deactivated"}`,
+        data: service
       });
 
     }
     catch (error) {
+      return res.status(StatusCode.SERVER_ERROR).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  async setServiceStatus(req, res) {
+    try {
+      const serviceId = req.params.id;
+      const { status } = req.body;
+
+      if (!serviceId) {
+        return res.status(StatusCode.NOT_FOUND).json({
+          success: false,
+          message: "Service ID is required"
+        });
+      }
+
+      if (!['active', 'inactive'].includes(status)) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          success: false,
+          message: "Status must be 'active' or 'inactive'"
+        });
+      }
+
+      const service = await serviceModel.findByIdAndUpdate(
+        serviceId,
+        { is_active: status === 'active' },
+        { new: true }
+      );
+
+      if (!service) {
+        return res.status(StatusCode.NOT_FOUND).json({
+          success: false,
+          message: "Service not found"
+        });
+      }
+
+      return res.status(StatusCode.SUCCESS).json({
+        success: true,
+        message: `Service ${status === 'active' ? 'activated' : 'deactivated'} successfully`,
+        data: service
+      });
+
+    } catch (error) {
       return res.status(StatusCode.SERVER_ERROR).json({
         success: false,
         message: error.message
