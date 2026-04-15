@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Clock, Loader2, Upload, X, ShieldAlert } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { providerApi } from '@/services/api/provider';
 import { adminApi } from '@/services/api/admin';
 import toast from 'react-hot-toast';
@@ -17,7 +16,7 @@ const fadeVariant = {
 
 export default function ProviderPendingPage() {
   const { user } = useAuthStore();
-  const router = useRouter();
+  const fetchedRef = useRef(false);
 
   const [loading, setLoading] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -35,10 +34,9 @@ export default function ProviderPendingPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // If somehow approved, boot them back to dashboard
-    if (user?.providerStatus === 'approved') {
-      router.push('/provider/dashboard');
-    }
+    // Prevent duplicate fetches
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
 
     const fetchServices = async () => {
       try {
@@ -49,7 +47,7 @@ export default function ProviderPendingPage() {
       }
     };
     fetchServices();
-  }, [user, router]);
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {

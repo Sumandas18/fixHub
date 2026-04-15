@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { CalendarDays, Star, TrendingUp, CheckCircle, Clock, Wrench, ArrowRight, Loader2, AlertCircle, Upload, X } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { providerApi } from '@/services/api/provider';
 import { adminApi } from '@/services/api/admin'; // To fetch services for the dropdown
 import toast from 'react-hot-toast';
@@ -24,6 +25,8 @@ const quickActions = [
 
 export default function ProviderDashboardPage() {
   const { user } = useAuthStore();
+  const router = useRouter();
+  const redirectedRef = useRef(false); // guard against repeated redirects
   const [data, setData] = useState({
     bookings: [],
   });
@@ -37,6 +40,18 @@ export default function ProviderDashboardPage() {
   const [profileImgPreview, setProfileImgPreview] = useState<string | null>(null);
   const [submittingProfile, setSubmittingProfile] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // ONE-SHOT redirect guard: non-approved providers → /provider/pending
+  useEffect(() => {
+    if (!user || redirectedRef.current) return;
+    const status = (user as any).providerStatus;
+    const profileDone = (user as any).isProfileCompleted;
+    // Only approved providers may use the dashboard
+    if (status !== 'approved') {
+      redirectedRef.current = true;
+      router.replace('/provider/pending');
+    }
+  }, [user, router]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -55,8 +70,10 @@ export default function ProviderDashboardPage() {
         setLoading(false);
       }
     };
-    if (user) {
+    if (user && (user as any).providerStatus === 'approved') {
         fetchDashboardData();
+    } else {
+      setLoading(false);
     }
   }, [user]);
 

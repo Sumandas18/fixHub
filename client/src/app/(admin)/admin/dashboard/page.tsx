@@ -22,6 +22,16 @@ import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { containerVariants, fadeUpVariant, scaleUpVariant } from '@/lib/animations';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+/** Build a full media URL from a stored path/filename */
+const mediaUrl = (path: string | null | undefined): string | null => {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  // strip leading slash if present, then prepend API_URL
+  return `${API_URL}/${path.replace(/^\//, '')}`;
+};
+
 export default function AdminDashboardPage() {
   const [data, setData] = useState({
     admins: [] as any[],
@@ -334,7 +344,7 @@ export default function AdminDashboardPage() {
                 {/* Profile Header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                   {approvalModal.profile_img_url ? (
-                    <img src={`http://localhost:8000/${approvalModal.profile_img_url}`} alt="Avatar" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.1)' }} />
+                    <img src={mediaUrl(approvalModal.profile_img_url) ?? ''} alt="Avatar" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.1)' }} />
                   ) : (
                     <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg, #eb5e28, #f59e0b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, color: '#fff', fontWeight: 700 }}>
                       {approvalModal.name[0]}
@@ -366,16 +376,29 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
-                {/* ID Document Link */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {/* ID Document */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                    <p style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9' }}>Uploaded Legal ID / Proof Document</p>
-                   {approvalModal.doc_url ? (
-                     <a href={`http://localhost:8000/${approvalModal.doc_url}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 10, color: '#60a5fa', fontSize: 13, textDecoration: 'none', width: 'max-content' }}>
-                       <FileText size={16} /> View Document <ExternalLink size={14} />
-                     </a>
-                   ) : (
-                     <p style={{ fontSize: 13, color: '#ef4444' }}>No document found</p>
-                   )}
+                   {(() => {
+                     const url = mediaUrl(approvalModal.doc_url);
+                     if (!url) return <p style={{ fontSize: 13, color: '#ef4444' }}>No document uploaded</p>;
+                     const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+                     return isImage ? (
+                       <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
+                         <img src={url} alt="Provider document" style={{ width: '100%', maxHeight: 280, objectFit: 'cover', display: 'block' }} />
+                         <a href={url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', background: 'rgba(59,130,246,0.1)', color: '#60a5fa', fontSize: 12, textDecoration: 'none' }}>
+                           <ExternalLink size={13} /> Open full image
+                         </a>
+                       </div>
+                     ) : (
+                       <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
+                         <iframe src={url} title="Provider document" style={{ width: '100%', height: 260, border: 'none', background: '#fff' }} />
+                         <a href={url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', background: 'rgba(59,130,246,0.1)', color: '#60a5fa', fontSize: 12, textDecoration: 'none' }}>
+                           <FileText size={13} /> Open in new tab
+                         </a>
+                       </div>
+                     );
+                   })()}
                 </div>
 
               </div>
