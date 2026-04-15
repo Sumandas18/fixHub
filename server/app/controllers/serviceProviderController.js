@@ -13,7 +13,7 @@ class ServiceProviderController {
         try {
             let profile_img, profile_img_url;
 
-            const { service_id, service_area_zip, experience, charges_per_hour } = req.body;
+            let { service_id, service_area_zip, experience, charges_per_hour } = req.body;
             const provider = req.user;
 
             const user = await userModel.findById(provider.user_id);
@@ -35,7 +35,7 @@ class ServiceProviderController {
             if (typeof service_area_zip === "string") {
                 service_area_zip = [service_area_zip];
             }
-            
+
             const { data, error } = createServiceProviderValidation.validate({ service_area_zip, experience, charges_per_hour })
             if (error) {
                 console.log(error)
