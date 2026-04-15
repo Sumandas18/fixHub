@@ -43,15 +43,15 @@ export default function Hero() {
       <div style={{ position:'relative', zIndex:2, width:'100%', maxWidth:1200, margin:'0 auto', padding:'0 5%', display:'grid', gridTemplateColumns:'1fr 1fr', gap:60, alignItems:'center' }}>
 
         {/* LEFT */}
-        <motion.div variants={stagger} initial="hidden" animate="visible">
+        <motion.div variants={stagger as any} initial="hidden" animate="visible">
           {/* Badge */}
-          <motion.div variants={fadeUp} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'6px 16px', background:'rgba(168,85,247,0.1)', border:'1px solid rgba(168,85,247,0.25)', borderRadius:50, marginBottom:24 }}>
+          <motion.div variants={fadeUp as any} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'6px 16px', background:'rgba(168,85,247,0.1)', border:'1px solid rgba(168,85,247,0.25)', borderRadius:50, marginBottom:24 }}>
             <Zap size={13} color="#a855f7" />
             <span style={{ fontSize:12, fontWeight:700, color:'#a855f7', letterSpacing:'0.5px', textTransform:'uppercase' }}>On-Demand Repair Experts</span>
           </motion.div>
 
           {/* Heading */}
-          <motion.h1 variants={fadeUp} style={{ fontFamily:'Outfit,sans-serif', fontSize:'clamp(2.4rem,5vw,3.8rem)', fontWeight:800, color:'#fff', lineHeight:1.12, letterSpacing:-1.5, marginBottom:20 }}>
+          <motion.h1 variants={fadeUp as any} style={{ fontFamily:'Outfit,sans-serif', fontSize:'clamp(2.4rem,5vw,3.8rem)', fontWeight:800, color:'#fff', lineHeight:1.12, letterSpacing:-1.5, marginBottom:20 }}>
             Home & Vehicle Repair,{' '}
             <span style={{ background:'linear-gradient(135deg,#a855f7 0%,#3b82f6 50%,#ec4899 100%)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
               On-Demand.
@@ -59,13 +59,13 @@ export default function Hero() {
           </motion.h1>
 
           {/* Sub */}
-          <motion.p variants={fadeUp} style={{ fontSize:16, color:'#94a3b8', lineHeight:1.75, marginBottom:36, maxWidth:480 }}>
+          <motion.p variants={fadeUp as any} style={{ fontSize:16, color:'#94a3b8', lineHeight:1.75, marginBottom:36, maxWidth:480 }}>
             From AC servicing to emergency roadside help — FixHub connects you with
             verified, background-checked professionals in minutes.
           </motion.p>
 
           {/* CTAs */}
-          <motion.div variants={fadeUp} style={{ display:'flex', gap:14, flexWrap:'wrap', marginBottom:40 }}>
+          <motion.div variants={fadeUp as any} style={{ display:'flex', gap:14, flexWrap:'wrap', marginBottom:40 }}>
             <Link href="/#services" className="hero-btn-primary">
               Explore Services <ArrowRight size={16} />
             </Link>
@@ -75,7 +75,7 @@ export default function Hero() {
           </motion.div>
 
           {/* Trust row */}
-          <motion.div variants={fadeUp} style={{ display:'flex', gap:24, flexWrap:'wrap' }}>
+          <motion.div variants={fadeUp as any} style={{ display:'flex', gap:24, flexWrap:'wrap' }}>
             {[
               { icon: Star,   label: '4.9★ Rating', sub: '12k+ reviews' },
               { icon: Shield, label: 'Verified Pros', sub: 'Background checked' },

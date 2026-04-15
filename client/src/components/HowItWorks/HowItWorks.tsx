@@ -24,7 +24,7 @@ export default function HowItWorks() {
         style={{ maxWidth:1200, margin:'0 auto' }}>
 
         {/* Header */}
-        <motion.div variants={fadeUp} style={{ textAlign:'center', marginBottom:64 }}>
+        <motion.div variants={fadeUp as any} style={{ textAlign:'center', marginBottom:64 }}>
           <div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'5px 16px', background:'rgba(59,130,246,0.08)', border:'1px solid rgba(59,130,246,0.2)', borderRadius:50, marginBottom:16 }}>
             <span style={{ fontSize:11, fontWeight:700, color:'#60a5fa', letterSpacing:'0.8px', textTransform:'uppercase' }}>Simple Process</span>
           </div>
@@ -40,7 +40,7 @@ export default function HowItWorks() {
           <div style={{ position:'absolute', top:52, left:'12.5%', right:'12.5%', height:1, background:'linear-gradient(90deg, #a855f7, #3b82f6, #ec4899, #f97316)', opacity:0.2, zIndex:0 }} />
 
           {steps.map((s, i) => (
-            <motion.div key={s.num} variants={fadeUp} whileHover={{ y:-6, boxShadow:`0 20px 50px rgba(0,0,0,0.4), 0 0 20px ${s.color}20` }}
+            <motion.div key={s.num} variants={fadeUp as any} whileHover={{ y:-6, boxShadow:`0 20px 50px rgba(0,0,0,0.4), 0 0 20px ${s.color}20` }}
               style={{ position:'relative', zIndex:1, padding:28, background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:20, backdropFilter:'blur(12px)', transition:'all 0.3s ease', cursor:'default' }}>
               {/* Number badge */}
               <div style={{ fontSize:11, fontWeight:800, color:s.color, letterSpacing:'1px', marginBottom:16, fontFamily:'Outfit,sans-serif' }}>{s.num}</div>

@@ -123,7 +123,7 @@ export default function ProviderRegisterPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', background: '#0f172a' }}>
       {/* Left Design Section */}
-      <div style={{ flex: 1, display: 'none', '@media (min-width: 1024px)': { display: 'block' }, position: 'relative', overflow: 'hidden', padding: '4rem', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}>
+      <div style={{ flex: 1, display: 'none', '@media (min-width: 1024px)': { display: 'block' }, position: 'relative', overflow: 'hidden', padding: '4rem', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' } as any}>
         <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', height: '100%' }}>
           <Image src="/logo/FixHublogo.png" alt="FixHub Logo" width={140} height={42} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
           

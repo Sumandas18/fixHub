@@ -16,6 +16,9 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "FixHub | Expert Home & Vehicle Repair Services",
   description: "Your all-in-one on-demand service app for home appliance repair, electrical fixes, plumbing, cleaning, maintenance, and vehicle assistance.",
+  icons: {
+    icon: "/logo/FixHublogo.png",
+  },
 };
 
 export default function RootLayout({

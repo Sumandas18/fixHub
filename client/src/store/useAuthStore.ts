@@ -38,8 +38,9 @@ export const useAuthStore = create<AuthState>()(
             response = await authApi.customerLogin(credentials);
           }
 
-          const token = response.access_token || response.token;
-          const userData = response.data || response.user;
+          const resAny = response as any;
+          const token = resAny.access_token || resAny.token;
+          const userData = resAny.data || resAny.user;
           // Ensure role is embedded in the user object
           const userWithRole = { ...userData, role };
 

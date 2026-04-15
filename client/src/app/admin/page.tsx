@@ -147,88 +147,106 @@ export default function AdminLandingPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#0b0f19', overflow: 'hidden', position: 'relative' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#050814', overflow: 'hidden', position: 'relative' }}>
       
-      {/* Dynamic Background */}
-      <div className="bg-mesh" style={{ position: 'absolute', inset: 0, zIndex: 0 }}></div>
+      {/* ── ANIMATED BACKGROUND EXPERIENCES ── */}
+      <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(168,85,247,0.15) 0%, transparent 60%)', filter: 'blur(80px)', animation: 'floatBlob 12s ease-in-out infinite alternate' }} />
+      <div style={{ position: 'absolute', bottom: '-5%', right: '-15%', width: '60vw', height: '60vw', background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 60%)', filter: 'blur(80px)', animation: 'floatBlob 15s ease-in-out infinite alternate-reverse' }} />
+      <div style={{ position: 'absolute', top: '40%', right: '20%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, rgba(236,72,153,0.1) 0%, transparent 60%)', filter: 'blur(80px)', animation: 'floatBlob 18s ease-in-out infinite alternate' }} />
 
-      {/* Landing CTA */}
-      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }} style={{ textAlign: 'center', maxWidth: 800, padding: '2rem' }}>
-          
+      {/* Floating Particles/Bubbles */}
+      <div className="particles-container">
+        {[...Array(15)].map((_, i) => (
+          <div key={i} className={`particle p${i}`} />
+        ))}
+      </div>
+
+      {/* ── CENTRAL CONTENT ── */}
+      <div style={{ position: 'relative', zIndex: 10, display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }} 
+          animate={{ opacity: 1, scale: 1 }} 
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} 
+          style={{ 
+            textAlign: 'center', 
+            maxWidth: 600, 
+            padding: '4rem 3rem',
+            background: 'rgba(255,255,255,0.03)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: '32px',
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxShadow: '0 30px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)'
+          }}
+        >
+          {/* Logo */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
-            <div style={{ background: 'rgba(99,102,241,0.1)', padding: '1rem', borderRadius: '50%', border: '1px solid rgba(99,102,241,0.2)' }}>
-              <ShieldCheck size={56} color="#8b5cf6" />
-            </div>
+             <img src="/logo/FixHublogo.png" alt="FixHub Logo" style={{ width: 140, height: 'auto', filter: 'drop-shadow(0 0 15px rgba(255,255,255,0.2))' }} />
           </div>
           
-          <h1 style={{ fontSize: '4rem', fontWeight: 800, color: '#fff', lineHeight: 1.1, marginBottom: '1.5rem', letterSpacing: '-0.03em' }}>
-            Welcome to <span className="gradient-text-purple">FixHub Admin</span>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: '1rem', letterSpacing: '-0.02em' }}>
+            Welcome to <span style={{ background: 'linear-gradient(to right, #c084fc, #818cf8, #f472b6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>FixHub Admin</span>
           </h1>
-          <p style={{ fontSize: '1.25rem', color: '#94a3b8', marginBottom: '3rem', maxWidth: 600, margin: '0 auto 3rem auto', lineHeight: 1.6 }}>
-            Command operations, verify incoming services, and scale the ecosystem elegantly from one premium dashboard.
+          
+          <p style={{ fontSize: '1.1rem', color: '#94a3b8', marginBottom: '3rem', lineHeight: 1.6 }}>
+            Control your platform with power & elegance. Verify incoming services, securely moderate requests, and scale efficiently.
           </p>
           
           <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-            {/* PRIMARY: Login */}
-            <button
+            {/* PRIMARY BUTTON: Login */}
+            <motion.button
+              whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(168,85,247,0.6)' }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => router.push('/admin/login')}
               style={{
                 background: 'linear-gradient(135deg, #a855f7, #6366f1)',
                 color: '#fff',
                 border: 'none',
-                padding: '1.25rem 3rem',
-                fontSize: '1.125rem',
+                padding: '1rem 2.5rem',
+                fontSize: '1rem',
                 fontWeight: 700,
                 borderRadius: '50px',
                 cursor: 'pointer',
-                boxShadow: '0 10px 30px -5px rgba(139,92,246,0.5)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
               }}
-              onMouseOver={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
-              onMouseOut={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
             >
-              <ShieldCheck size={20} />
-              Login as Admin
-            </button>
+              <Lock size={18} />
+              Login
+            </motion.button>
 
-            {/* SECONDARY: Register */}
-            <button
+            {/* SECONDARY BUTTON: Register */}
+            <motion.button
+              whileHover={{ scale: 1.05, background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.3)', boxShadow: '0 0 20px rgba(255,255,255,0.1)' }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setShowModal(true)}
               style={{
-                background: 'transparent',
-                color: '#a78bfa',
-                border: '1px solid rgba(139,92,246,0.35)',
-                padding: '1.25rem 2.5rem',
+                background: 'rgba(255,255,255,0.03)',
+                color: '#f8fafc',
+                border: '1px solid rgba(255,255,255,0.15)',
+                padding: '1rem 2.5rem',
                 fontSize: '1rem',
                 fontWeight: 600,
                 borderRadius: '50px',
                 cursor: 'pointer',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = 'rgba(139,92,246,0.1)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.transform = 'translateY(0)';
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                backdropFilter: 'blur(10px)',
               }}
             >
-              Register as Admin
-            </button>
+              <User size={18} />
+              Register
+            </motion.button>
           </div>
         </motion.div>
       </div>
 
-      {/* Powerful Layout Modal */}
+      {/* ── REGISTRATION MODAL ── */}
       <AnimatePresence>
         {showModal && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(5,8,15,0.85)', backdropFilter: 'blur(16px)', padding: '1.5rem' }}>
-            <motion.div variants={fadeVariant} initial="hidden" animate="visible" exit="exit" style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', width: '100%', maxWidth: '1000px', maxHeight: '95vh', overflowY: 'auto', boxShadow: '0 40px 100px -20px rgba(0,0,0,0.8)', position: 'relative' }}>
+            <motion.div variants={fadeVariant as any} initial="hidden" animate="visible" exit="exit" style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', width: '100%', maxWidth: '1000px', maxHeight: '95vh', overflowY: 'auto', boxShadow: '0 40px 100px -20px rgba(0,0,0,0.8)', position: 'relative' }}>
               
               <div style={{ position: 'sticky', top: 0, background: 'rgba(15,23,42,0.9)', backdropFilter: 'blur(12px)', padding: '1.5rem 2rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -396,7 +414,7 @@ export default function AdminLandingPage() {
 
                   </div>
                 ) : (
-                  <motion.form key="otp" variants={fadeVariant} initial="hidden" animate="visible" exit="exit" onSubmit={submitOTPPhase2} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4rem 2rem' }}>
+                  <motion.form key="otp" variants={fadeVariant as any} initial="hidden" animate="visible" exit="exit" onSubmit={submitOTPPhase2} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4rem 2rem' }}>
                      <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem', boxShadow: '0 0 40px rgba(139,92,246,0.2)' }}>
                         <Mail size={36} color="#a855f7" />
                       </div>
@@ -423,7 +441,36 @@ export default function AdminLandingPage() {
           </div>
         )}
       </AnimatePresence>
+
       <style dangerouslySetInnerHTML={{__html: `
+        @keyframes floatBlob { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(30px, 50px) scale(1.1); } }
+        
+        /* Particle Rules */
+        .particles-container { position: absolute; inset: 0; zIndex: 5; pointer-events: none; overflow: hidden; }
+        .particle { position: absolute; border-radius: 50%; opacity: 0; animation: floatUp linear infinite; }
+        @keyframes floatUp { 
+          0% { transform: translateY(100vh); opacity: 0; } 
+          10% { opacity: 0.8; } 
+          90% { opacity: 0.8; } 
+          100% { transform: translateY(-20vh); opacity: 0; } 
+        }
+
+        .p0 { width: 4px; height: 4px; background: rgba(168,85,247,0.4); left: 10%; animation-duration: 15s; animation-delay: 0s; }
+        .p1 { width: 8px; height: 8px; background: rgba(99,102,241,0.3); left: 20%; animation-duration: 25s; animation-delay: 2s; }
+        .p2 { width: 5px; height: 5px; background: rgba(236,72,153,0.5); left: 35%; animation-duration: 20s; animation-delay: 4s; }
+        .p3 { width: 12px; height: 12px; background: rgba(168,85,247,0.2); left: 50%; animation-duration: 28s; animation-delay: 1s; }
+        .p4 { width: 3px; height: 3px; background: rgba(99,102,241,0.6); left: 65%; animation-duration: 12s; animation-delay: 3s; }
+        .p5 { width: 10px; height: 10px; background: rgba(236,72,153,0.3); left: 80%; animation-duration: 22s; animation-delay: 5s; }
+        .p6 { width: 7px; height: 7px; background: rgba(168,85,247,0.4); left: 90%; animation-duration: 18s; animation-delay: 7s; }
+        .p7 { width: 5px; height: 5px; background: rgba(99,102,241,0.5); left: 25%; animation-duration: 16s; animation-delay: 6s; }
+        .p8 { width: 9px; height: 9px; background: rgba(236,72,153,0.3); left: 45%; animation-duration: 21s; animation-delay: 2s; }
+        .p9 { width: 4px; height: 4px; background: rgba(168,85,247,0.6); left: 75%; animation-duration: 14s; animation-delay: 8s; }
+        .p10 { width: 6px; height: 6px; background: rgba(99,102,241,0.4); left: 5%; animation-duration: 19s; animation-delay: 3s; }
+        .p11 { width: 11px; height: 11px; background: rgba(236,72,153,0.2); left: 55%; animation-duration: 26s; animation-delay: 1s; }
+        .p12 { width: 3px; height: 3px; background: rgba(168,85,247,0.5); left: 85%; animation-duration: 11s; animation-delay: 4s; }
+        .p13 { width: 7px; height: 7px; background: rgba(99,102,241,0.3); left: 15%; animation-duration: 20s; animation-delay: 9s; }
+        .p14 { width: 8px; height: 8px; background: rgba(236,72,153,0.4); left: 95%; animation-duration: 24s; animation-delay: 0s; }
+
         .premium-input:focus {
           border-color: rgba(139,92,246, 0.5) !important;
           box-shadow: 0 0 0 3px rgba(139,92,246, 0.15) !important;
