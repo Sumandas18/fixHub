@@ -3,6 +3,7 @@ const userModel = require("../models/userModel");
 const serviceProviderModel = require("../models/serviceProviderModel");
 const checkUpdateProviderValidate = require("./../utils/validation/update/checkUpdateProviderValidation");
 const sendOTPMails = require("../utils/sendMail");
+
 class ProviderController {
 
   async getAllProvider(req, res) {
