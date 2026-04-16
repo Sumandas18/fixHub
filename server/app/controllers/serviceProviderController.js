@@ -60,19 +60,19 @@ class ServiceProviderController {
             existingServiceProvider.experience = experience;
             existingServiceProvider.charges_per_hour = charges_per_hour;
 
-            await existingServiceProvider.save();
+            const updatedProvider = await existingServiceProvider.save();
 
-            // await sendOTPMails({ user, provider: serviceProvider, type: "providerStatus" });
+            await sendOTPMails({ user, provider: updatedProvider, type: "providerStatus" });
 
             return res.status(StatusCode.CREATED).json({
                 success: true,
                 message: "Service added successfully",
-                // data: serviceProvider
+                data: updatedProvider
             });
         }
         catch (err) {
             console.log(err);
-            
+
             res.status(StatusCode.SERVER_ERROR).json({
                 success: false,
                 message: err.message
@@ -146,7 +146,30 @@ class ServiceProviderController {
 
     async getAllServiceProvider(req, res) {
         try {
-            const allServiceProvider = await serviceProviderModel.find();
+            const allServiceProvider = await serviceProviderModel.aggregate([
+                {
+                    $lookup: {
+                        from: "users",
+                        localField: "provider_id",
+                        foreignField: "_id",
+                        as: "provider"
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "services",
+                        localField: "service_id",
+                        foreignField: "_id",
+                        as: "service"
+                    }
+                },
+                {
+                    $unwind:"$provider"
+                },
+                {
+                    $unwind:"$service"
+                }
+            ])
 
             return res.status(StatusCode.SUCCESS).json({
                 success: true,

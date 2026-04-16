@@ -8,9 +8,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { containerVariants, fadeUpVariant, scaleUpVariant } from '@/lib/animations';
 
 export default function AdminProvidersPage() {
-  const [providers, setProviders]         = useState<any[]>([]);
-  const [loading, setLoading]             = useState(true);
-  const [search, setSearch]               = useState('');
+  const [providers, setProviders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Document preview modal
@@ -70,7 +70,7 @@ export default function AdminProvidersPage() {
     (p.user_name || '').toLowerCase().includes(search.toLowerCase()) ||
     (p.user_email || '').toLowerCase().includes(search.toLowerCase())
   );
-console.log(docModal,filtered);
+  // console.log(docModal, filtered);
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
@@ -132,10 +132,9 @@ console.log(docModal,filtered);
 
                   {/* Approval Status */}
                   <td>
-                    <span className={`badge ${
-                      p.service?.status === 'approved' ? 'confirmed' :
+                    <span className={`badge ${p.service?.status === 'approved' ? 'confirmed' :
                       p.service?.status === 'rejected' ? 'blocked' : 'pending'
-                    }`}>
+                      }`}>
                       {p.service?.status
                         ? p.service.status.charAt(0).toUpperCase() + p.service.status.slice(1)
                         : 'Pending'
@@ -145,8 +144,8 @@ console.log(docModal,filtered);
 
                   {/* Account Status */}
                   <td>
-                    <span className={`badge ${p.isBlocked ? 'blocked' : 'active'}`}>
-                      {p.isBlocked ? 'Blocked' : 'Active'}
+                    <span className={`badge ${p.service?.status === 'pending' ? 'pending' : p.isBlocked ? 'blocked' : 'active'}`}>
+                      {p.service?.status === 'pending' ? '' : p.isBlocked ? 'Blocked' : 'Active'}
                     </span>
                   </td>
 
@@ -181,24 +180,27 @@ console.log(docModal,filtered);
                           </button>
                         </>
                       ) : (
-                        <button className="btn btn-secondary btn-sm" disabled={!!actionLoading} onClick={() => handleApprove(p._id, p.service?.status === 'approved' ? 'reject' : 'approve')}>
-                          {p.service?.status === 'approved' ? <><XCircle size={12} /> Revoke</> : <><CheckCircle size={12} /> Re-approve</>}
-                        </button>
+                        <>
+                          <button className="btn btn-secondary btn-sm" disabled={!!actionLoading} onClick={() => handleApprove(p._id, p.service?.status === 'approved' ? 'reject' : 'approve')}>
+                            {p.service?.status === 'approved' ? <><XCircle size={12} /> Revoke</> : <><CheckCircle size={12} /> Re-approve</>}
+                          </button>
+
+                          {/* Block / Unblock */}
+                          <button
+                            className={`btn btn-sm ${p.isBlocked ? 'btn-success' : 'btn-danger'}`}
+                            disabled={actionLoading === p._id + 'block'}
+                            onClick={() => handleBlockUnblock(p._id, p.isBlocked)}
+                          >
+                            {actionLoading === p._id + 'block'
+                              ? <Loader2 size={12} className="al-spin" />
+                              : p.isBlocked
+                                ? <><Shield size={12} /> Unblock</>
+                                : <><ShieldOff size={12} /> Block</>
+                            }
+                          </button>
+                        </>
                       )}
 
-                      {/* Block / Unblock */}
-                      <button
-                        className={`btn btn-sm ${p.isBlocked ? 'btn-success' : 'btn-danger'}`}
-                        disabled={actionLoading === p._id + 'block'}
-                        onClick={() => handleBlockUnblock(p._id, p.isBlocked)}
-                      >
-                        {actionLoading === p._id + 'block'
-                          ? <Loader2 size={12} className="al-spin" />
-                          : p.isBlocked
-                            ? <><Shield size={12} /> Unblock</>
-                            : <><ShieldOff size={12} /> Block</>
-                        }
-                      </button>
                     </div>
                   </td>
                 </tr>

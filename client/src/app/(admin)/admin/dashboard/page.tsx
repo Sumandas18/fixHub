@@ -146,14 +146,16 @@ export default function AdminDashboardPage() {
     .slice(0, 4)
     .map((sp: any) => ({
       ...sp,
-      name:    sp.provider_id?.user_name || sp.provider_id?.name || 'Unknown Provider',
-      email:   sp.provider_id?.user_email || 'No email',
-      doc_url: sp.provider_id?.doc_url,
-      service: sp.service_id?.service_name || 'Unknown Service',
+      name:    sp.provider?.user_name || sp.provider_id?.name || 'Unknown Provider',
+      email:   sp.provider?.user_email || 'No email',
+      doc_url: sp.provider?.doc_url,
+      service: sp.service?.service_name || 'Unknown Service',
       date:    new Date(sp.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      id:      sp._id,
+      id:      sp.provider_id,
     }));
 
+    // console.log(data.serviceProviders);
+    
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
       {/* Page Header */}
@@ -364,7 +366,7 @@ export default function AdminDashboardPage() {
                   </div>
                   <div>
                     <p style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Experience</p>
-                    <p style={{ fontSize: 14, color: '#f1f5f9', fontWeight: 500 }}>{approvalModal.experience}</p>
+                    <p style={{ fontSize: 14, color: '#f1f5f9', fontWeight: 500 }}>{approvalModal.experience} yr.</p>
                   </div>
                   <div>
                     <p style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Hourly Rate</p>

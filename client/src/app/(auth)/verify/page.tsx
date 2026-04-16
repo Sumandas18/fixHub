@@ -78,6 +78,7 @@ function VerifyForm() {
   };
 
   const handleResend = async () => {
+    setOtpValues(['', '', '', '']);
     const safeUserId = (userId && userId !== 'undefined') ? userId : undefined;
     const safeEmail  = (email  && email  !== 'undefined') ? email  : undefined;
     if (!safeUserId && !safeEmail) return;

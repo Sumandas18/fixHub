@@ -1,5 +1,6 @@
 require("dotenv").config();
 const cloudinary = require('cloudinary').v2;
+const path = require('path');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
@@ -17,7 +18,7 @@ const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'fixhub/document',
-        format: async (req, file) => 'pdf',
+        allowed_formats: async (req, file) => ["jpg", "jpeg", "png"],
         public_id: (req, file) => 'fixhub-doc_' + file.originalname.split(" ").join("-") + Date.now()
     },
 });

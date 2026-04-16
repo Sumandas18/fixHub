@@ -56,7 +56,7 @@ module.exports = (user, provider) => {
                 <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:16px 0;">
                     <p><strong>Name:</strong> ${user.user_name}</p>
                     <p><strong>Email:</strong> ${user.user_email}</p>
-                    <p><strong>Experience:</strong> ${provider.experience}</p>
+                    <p><strong>Experience:</strong> ${provider.experience} yr</p>
                     <p><strong>Charges / Hour:</strong> ₹${provider.charges_per_hour}</p>
                     <p><strong>Status:</strong>
                         <span style="font-weight:bold;color:${cfg.color};">

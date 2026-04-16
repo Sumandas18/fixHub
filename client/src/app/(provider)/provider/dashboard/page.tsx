@@ -25,6 +25,7 @@ const quickActions = [
 
 export default function ProviderDashboardPage() {
   const { user } = useAuthStore();
+
   const router = useRouter();
   const redirectedRef = useRef(false); // guard against repeated redirects
   const [data, setData] = useState({
@@ -41,11 +42,16 @@ export default function ProviderDashboardPage() {
   const [submittingProfile, setSubmittingProfile] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+  console.log('AUTH STORE USER UPDATED:', user);
+}, [user]);
+
   // ONE-SHOT redirect guard: non-approved providers → /provider/pending
   useEffect(() => {
     if (!user || redirectedRef.current) return;
     const status = (user as any).providerStatus;
     const profileDone = (user as any).isProfileCompleted;
+    // console.log('status',status)
     // Only approved providers may use the dashboard
     if (status !== 'approved') {
       redirectedRef.current = true;

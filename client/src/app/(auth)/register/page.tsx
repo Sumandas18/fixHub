@@ -45,7 +45,7 @@ const labelStyle = {
 export default function RegisterPage() {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
-
+  const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3 MB
   /* role tab */
   const [role, setRole] = useState<'customer' | 'provider'>('customer');
 
@@ -56,7 +56,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [documentFile, setDocumentFile] = useState<File | null>(null);
-  
+
   const [showPw, setShowPw] = useState(false);
   const [showCpw, setShowCpw] = useState(false);
 
@@ -70,9 +70,17 @@ export default function RegisterPage() {
     : 'linear-gradient(135deg,#1c4ed8 0%,#7c3aed 100%)';
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setDocumentFile(e.target.files[0]);
+
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('File size must be less than 3 MB');
+      e.target.value = '';
+      setDocumentFile(null);
+      return;
     }
+    setDocumentFile(file);
   };
 
   /* ── Submit ──────────────────────────────────────────────── */
@@ -258,21 +266,21 @@ export default function RegisterPage() {
             {/* Provider Document Upload */}
             {role === 'provider' && (
               <motion.div custom={5} variants={fadeUp} initial="hidden" animate="visible">
-                <label style={labelStyle}>ID Document / Legal Proof <span style={{ color: '#ef4444' }}>*</span></label>
-                <input type="file" ref={fileRef} hidden accept="application/pdf" onChange={handleFileChange} />
+                <label style={labelStyle}>ID Document / Legal Proof (JPG, JPEG, PNG) <span style={{ color: '#ef4444' }}>*</span></label>
+                <input type="file" ref={fileRef} hidden accept="image/*f" onChange={handleFileChange} />
                 <div onClick={() => fileRef.current?.click()} style={{ ...inp(focused === 'doc', accent), padding: '20px', textAlign: 'center', cursor: 'pointer', borderStyle: 'dashed' }}>
                   {documentFile ? (
-                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                       <FileText size={28} color="#60a5fa" />
-                       <span style={{ fontSize: 13, color: '#f1f5f9', fontWeight: 600 }}>{documentFile.name}</span>
-                       <span style={{ fontSize: 11, color: '#64748b' }}>Click to change file</span>
-                     </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                      <FileText size={28} color="#60a5fa" />
+                      <span style={{ fontSize: 13, color: '#f1f5f9', fontWeight: 600 }}>{documentFile.name}</span>
+                      <span style={{ fontSize: 11, color: '#64748b' }}>Click to change file</span>
+                    </div>
                   ) : (
-                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                       <UploadCloud size={28} color="#64748b" />
-                       <span style={{ fontSize: 13, color: '#94a3b8' }}>Upload provider's License, Aadhaar, or Business PDF</span>
-                       <span style={{ fontSize: 11, color: '#64748b' }}>(Max 3MB)</span>
-                     </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                      <UploadCloud size={28} color="#64748b" />
+                      <span style={{ fontSize: 13, color: '#94a3b8' }}>Upload provider's License, Aadhaar, or Business Photo</span>
+                      <span style={{ fontSize: 11, color: '#64748b' }}>(Max 3MB)</span>
+                    </div>
                   )}
                 </div>
               </motion.div>

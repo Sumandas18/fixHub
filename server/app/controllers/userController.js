@@ -69,77 +69,64 @@ class UserController {
         }
     }
 
-    async verifyOTP(req, res) {
+      async verifyOTP(req, res) {
         try {
-            const { userId, email, otp } = req.body;
+            const { userId, otp } = req.body;
 
-            if ((!userId && !email) || !otp) {
-                return res.status(StatusCode.BAD_REQUEST).json({
+            if (!userId || !otp) {
+                return res.status(StatusCode.BAD_GATEWAY).json({
                     success: false,
-                    message: "userId (or email) and OTP are required"
-                });
+                    message: "All fields are required"
+                })
             }
 
-            if (userId && !require('mongoose').Types.ObjectId.isValid(userId)) {
-                return res.status(StatusCode.BAD_REQUEST).json({
-                    success: false,
-                    message: "Invalid user ID format"
-                });
-            }
-
-            let user;
-            if (email) {
-                user = await userModel.findOne({ user_email: email });
-            } else {
-                user = await userModel.findById(userId);
-            }
+            const user = await userModel.findById(userId);
 
             if (!user) {
-                return res.status(StatusCode.NOT_FOUND).json({
+                return res.status(StatusCode.BAD_GATEWAY).json({
                     success: false,
                     message: "User not found"
-                });
+                })
             }
-            if (user.isVerified) {
-                return res.status(StatusCode.BAD_REQUEST).json({
-                    success: false,
-                    message: "User is already verified"
-                });
+            else {
+                if (user.isVerified) {
+                    return res.status(StatusCode.BAD_GATEWAY).json({
+                        success: false,
+                        message: "User already verified"
+                    })
+                }
+                else {
+                    const checkOTP = await otpModel.findOne({ userId: user._id, otp });
+
+                    if (!checkOTP) {
+                        return res.status(StatusCode.BAD_GATEWAY).json({
+                            success: false,
+                            message: "Invalid OTP"
+                        })
+                    }
+
+                    // Strict manual 5 min check
+                    const diffMins = (new Date() - new Date(checkOTP.createdAt)) / 60000;
+                    if (diffMins > 5) {
+                        await otpModel.deleteMany({ userId: user._id });
+                        return res.status(StatusCode.BAD_GATEWAY).json({
+                            success: false,
+                            message: "OTP has expired. Please request a new one."
+                        })
+                    }
+                    else {
+                        user.isVerified = true;
+                        await user.save();
+
+                        await otpModel.deleteMany({ userId: user._id });
+
+                        return res.status(StatusCode.SUCCESS).json({
+                            success: true,
+                            message: "Email verification successful"
+                        })
+                    }
+                }
             }
-
-            const checkOTP = await otpModel.findOne({ userId: user._id });
-console.log(user,checkOTP)
-            if (!checkOTP) {
-                return res.status(StatusCode.BAD_REQUEST).json({
-                    success: false,
-                    message: "OTP not found or already expired. Please request a new one."
-                });
-            }
-
-            if (String(checkOTP.otp) !== String(otp)) {
-                return res.status(StatusCode.BAD_REQUEST).json({
-                    success: false,
-                    message: "Invalid OTP. Please check and try again."
-                });
-            }
-
-            const diffMins = (new Date() - new Date(checkOTP.createdAt)) / 60000;
-            if (diffMins > 5) {
-                await otpModel.deleteMany({ userId: user._id });
-                return res.status(StatusCode.BAD_REQUEST).json({
-                    success: false,
-                    message: "OTP has expired. Please request a new one."
-                });
-            }
-
-            user.isVerified = true;
-            await user.save();
-            await otpModel.deleteMany({ userId: user._id });
-
-            return res.status(StatusCode.SUCCESS).json({
-                success: true,
-                message: "Email verification successful"
-            });
         }
         catch (err) {
             console.error('[VerifyOTP Error]:', err);
