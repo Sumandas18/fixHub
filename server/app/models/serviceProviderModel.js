@@ -43,15 +43,13 @@ const serviceProviderSchema = new schema({
     },
     isAvailable: {
         type: Boolean,
-        default: false
+        // default: false
+        default: true
     },
     rejection_reason: {
         type: String,
         default: null
     },
-    // ── NEW: Track whether provider has completed their profile ──
-    // Providers with isProfileCompleted = false are hidden from service listings
-    // and admin panel until they fill in their service, experience, rates, etc.
     isProfileCompleted: {
         type: Boolean,
         default: false

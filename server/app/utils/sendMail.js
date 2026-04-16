@@ -12,7 +12,7 @@ const contactPlacedEmail = require("./mail/contact/contactPlacedEmail");
 const contactReplyEmail = require("./mail/contact/contactReplyEmail");
 const passwordChangedEmail = require("./mail/passwordChangedEmail");
 
-const sendOTPMails = async ({ user, provider, booking, isBlocked, reason, type, otp, contact }) => {
+const sendOTPMails = async ({ user, provider, booking, service, isBlocked, reason, type, otp, contact }) => {
     try {
         let subject, html;
         const email = user?.user_email || contact?.email;
@@ -44,11 +44,11 @@ const sendOTPMails = async ({ user, provider, booking, isBlocked, reason, type, 
         }
         else if (type == "cancelBooking") {
             subject = "Booking cancel";
-            html = bookingCancelledEmail(user, booking, reason);
+            html = bookingCancelledEmail(user, booking, service, reason);
         }
         else if (type == "confirmBooking") {
             subject = "Booking confirmed";
-            html = bookingConfirmedEmail(user, booking);
+            html = bookingConfirmedEmail(user, provider, booking, service);
         }
         else if (type == "newBooking") {
             subject = "Booking order placed";

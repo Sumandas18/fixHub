@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { scaleUpVariant } from '@/lib/animations';
+import { providerApi } from '@/services/api/provider';
 
 const STATUS_OPTIONS = ['accepted', 'in-progress', 'rejected'];
 const TABS = ['All', 'Pending', 'Accepted', 'Completed', 'Rejected'];
@@ -13,20 +14,20 @@ const TABS = ['All', 'Pending', 'Accepted', 'Completed', 'Rejected'];
 type Booking = any;
 
 export default function ProviderBookingsPage() {
-  const [bookings, setBookings]         = useState<any[]>([]);
-  const [loading, setLoading]           = useState(true);
-  const [activeTab, setActiveTab]       = useState('All');
-  
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('All');
+
   // Modals
-  const [statusModal, setStatusModal]   = useState<Booking | null>(null);
-  const [otpModal, setOtpModal]         = useState<Booking | null>(null);
-  const [rejectModal, setRejectModal]   = useState<Booking | null>(null);
+  const [statusModal, setStatusModal] = useState<Booking | null>(null);
+  const [otpModal, setOtpModal] = useState<Booking | null>(null);
+  const [rejectModal, setRejectModal] = useState<Booking | null>(null);
 
   // Form states
   const [selectedStatus, setSelectedStatus] = useState('');
-  const [reason, setReason]            = useState('');
+  const [reason, setReason] = useState('');
   const [rejectReason, setRejectReason] = useState('');
-  const [otpValues, setOtpValues]      = useState(['', '', '', '']);
+  const [otpValues, setOtpValues] = useState(['', '', '', '']);
   const [actionLoading, setActionLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
 
@@ -35,7 +36,7 @@ export default function ProviderBookingsPage() {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const res = await api.get('/booking/provider');
+        const res = await providerApi.getBookings();
         setBookings(res.data.data || res.data || []);
       } catch (err) {
         toast.error('Failed to load bookings');
@@ -75,11 +76,12 @@ export default function ProviderBookingsPage() {
   };
 
   /* ── Mark Complete -> triggers OTP ── */
-  const handleMarkComplete = async (b: Booking) => {
+  const handleMarkComplete = async (id: string) => {
     setActionLoading(true);
     try {
-      // Backend generates and sends OTP
-      await api.put(`/booking/status/${b._id}`, { status: 'completed' });
+      await providerApi.confirmBooking(id, status = 'completed');
+
+      const b = bookings.find((b) => b._id === id);
       toast.success('OTP sent to customer');
       openOtpModal(b);
     } catch {
@@ -93,8 +95,14 @@ export default function ProviderBookingsPage() {
   const handleAccept = async (id: string) => {
     setActionLoading(true);
     try {
-      await api.patch(`/booking/${id}`, { status: 'accepted' });
-      setBookings((prev) => prev.map((b) => b._id === id ? { ...b, status: 'accepted' } : b));
+      await providerApi.confirmBooking(id, status = 'confirmed');
+
+      setBookings((prev) =>
+        prev.map((b) =>
+          b._id === id ? { ...b, status: 'accepted' } : b
+        )
+      );
+
       toast.success('Booking accepted successfully');
     } catch {
       toast.error('Failed to accept booking');
@@ -105,10 +113,19 @@ export default function ProviderBookingsPage() {
 
   const handleRejectSubmit = async () => {
     if (!rejectModal) return;
+
     setActionLoading(true);
     try {
-      await api.patch(`/booking/${rejectModal._id}`, { status: 'rejected', reason: rejectReason });
-      setBookings((prev) => prev.map((b) => b._id === rejectModal._id ? { ...b, status: 'rejected' } : b));
+      await providerApi.cancelBooking(rejectModal._id, rejectReason);
+
+      setBookings((prev) =>
+        prev.map((b) =>
+          b._id === rejectModal._id
+            ? { ...b, status: 'rejected' }
+            : b
+        )
+      );
+
       toast.success('Booking rejected');
       setRejectModal(null);
     } catch {
@@ -143,7 +160,9 @@ export default function ProviderBookingsPage() {
     if (otp.length < 4) return;
     setActionLoading(true);
     try {
-      await api.put('/booking/verify-otp', { otp, bookingId: otpModal?._id });
+
+      await providerApi.verifyOTP({ otp, bookingId: otpModal?._id });;
+
       setBookings((prev) =>
         prev.map((b) => b._id === otpModal?._id ? { ...b, otp_verified: true, status: 'completed' } : b)
       );
@@ -159,8 +178,10 @@ export default function ProviderBookingsPage() {
   const handleResendOtp = async () => {
     if (!otpModal || resendLoading) return;
     setResendLoading(true);
+    setOtpValues(['', '', '', '']);
     try {
-      await api.put('/booking/resend-otp', { bookingId: otpModal._id });
+      await providerApi.resendOTP({ bookingId: otpModal?._id });
+
       toast.success('OTP resent successfully');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to resend OTP');
@@ -206,11 +227,11 @@ export default function ProviderBookingsPage() {
           </thead>
           <tbody>
             {loading ? (
-               <tr>
-                 <td colSpan={6} style={{ textAlign: 'center', padding: 60 }}>
-                    <Loader2 size={28} className="al-spin" style={{ margin: '0 auto', color: '#60a5fa' }} />
-                 </td>
-               </tr>
+              <tr>
+                <td colSpan={6} style={{ textAlign: 'center', padding: 60 }}>
+                  <Loader2 size={28} className="al-spin" style={{ margin: '0 auto', color: '#60a5fa' }} />
+                </td>
+              </tr>
             ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={6}>
@@ -227,12 +248,12 @@ export default function ProviderBookingsPage() {
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div className="pv-avatar" style={{ width: 28, height: 28, fontSize: 12 }}>
-                        {(b.customer_id?.user_name || 'U')[0].toUpperCase()}
+                        {(b.customer?.user_name || 'U')[0].toUpperCase()}
                       </div>
-                      {b.customer_id?.user_name || 'Customer'}
+                      {b.customer?.user_name || 'Customer'}
                     </div>
                   </td>
-                  <td>{b.service_id?.service_name || b.service_provider_id?.service_id?.service_name || 'Booked Service'}</td>
+                  <td>{b.service?.service_name || 'Booked Service'}</td>
                   <td style={{ fontSize: 13, color: '#64748b' }}>
                     {b.scheduled_date ? new Date(b.scheduled_date).toLocaleDateString() : 'TBD'}<br />
                     <span style={{ color: '#334155', fontSize: 11 }}>{b.scheduled_time || 'TBD'}</span>
@@ -265,7 +286,7 @@ export default function ProviderBookingsPage() {
                           {b.status === 'accepted' && (
                             <button
                               className="pv-btn pv-btn-otp pv-btn-sm"
-                              onClick={() => handleMarkComplete(b)}
+                              onClick={() => handleMarkComplete(b._id)}
                               disabled={actionLoading}
                             >
                               <ShieldCheck size={13} /> Complete

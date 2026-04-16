@@ -1,4 +1,4 @@
-module.exports.taskCompletedOtpEmail = (user, booking, otp) => {
+module.exports = (user, booking, otp) => {
     return `
     <div style="font-family:Arial,sans-serif;background:#f3f4f6;padding:20px;">
         <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;overflow:hidden;">

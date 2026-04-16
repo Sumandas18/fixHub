@@ -1,4 +1,5 @@
 const cloudinary = require("cloudinary");
+const mongoose = require('mongoose');
 
 const StatusCode = require('../utils/statusCode');
 const createServiceProviderValidation = require('../utils/validation/create/checkCreateServiceProviderValidation');
@@ -164,10 +165,10 @@ class ServiceProviderController {
                     }
                 },
                 {
-                    $unwind:"$provider"
+                    $unwind: "$provider"
                 },
                 {
-                    $unwind:"$service"
+                    $unwind: "$service"
                 }
             ])
 
@@ -202,11 +203,57 @@ class ServiceProviderController {
                     .populate('service_id') || [];
             } else if (service_id) {
                 // For users requesting providers by service, only show approved providers with completed profiles
-                fetchServiceProvider = await serviceProviderModel
-                    .find({ service_id, status: "approved", isProfileCompleted: true })
-                    .populate('service_id') || [];
+                fetchServiceProvider = await serviceProviderModel.aggregate([
+                    {
+                        $match: {
+                            service_id: new mongoose.Types.ObjectId(service_id)
+                        }
+                    },
+                    {
+                        $match: {
+                            status: "approved"
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "provider_id",
+                            foreignField: "_id",
+                            as: "provider"
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "services",
+                            localField: "service_id",
+                            foreignField: "_id",
+                            as: "service"
+                        }
+                    },
+                    {
+                        $unwind: "$provider"
+                    },
+                    {
+                        $unwind: "$service"
+                    },
+                    {
+                        $lookup: {
+                            from: "serviceratings",
+                            localField: "provider_id",
+                            foreignField: "provider_id",
+                            as: "ratings"
+                        }
+                    },
+                    {
+                        $addFields: {
+                            averageRating: { $avg: "$ratings.stars" },
+                            ratingsCount: { $size: "$ratings" }
+                        }
+                    }
+                ])
             }
 
+            // console.log('fetchServiceProvider', fetchServiceProvider);
             // Always return empty array if no services
             return res.status(StatusCode.SUCCESS).json({
                 success: true,

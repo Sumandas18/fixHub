@@ -22,8 +22,8 @@ const getRandomEmoji = (category: string) => {
 export default function UserDashboardPage() {
   const { user } = useAuthStore();
   const [activeCategory, setActiveCategory] = useState('All');
-  const [searchQuery, setSearchQuery]       = useState('');
-  
+  const [searchQuery, setSearchQuery] = useState('');
+
   // Data State
   const [services, setServices] = useState<any[]>([]);
   const [providers, setProviders] = useState<any[]>([]);
@@ -33,9 +33,9 @@ export default function UserDashboardPage() {
   // Booking State
   const [selectedService, setSelectedService] = useState<any | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<any | null>(null);
-  const [bookingDate, setBookingDate]       = useState('');
-  const [bookingTime, setBookingTime]       = useState('');
-  const [bookingStep, setBookingStep]       = useState<'providers' | 'form' | 'success'>('providers');
+  const [bookingDate, setBookingDate] = useState('');
+  const [bookingTime, setBookingTime] = useState('');
+  const [bookingStep, setBookingStep] = useState<'providers' | 'form' | 'success'>('providers');
   const [bookingLoading, setBookingLoading] = useState(false);
 
   useEffect(() => {
@@ -65,7 +65,7 @@ export default function UserDashboardPage() {
     setBookingDate('');
     setBookingTime('');
     setBookingStep('providers');
-    
+
     // Fetch providers for this specific service
     setProvidersLoading(true);
     try {
@@ -81,10 +81,11 @@ export default function UserDashboardPage() {
   const handleBook = async () => {
     if (!bookingDate || !bookingTime || !selectedProvider) return;
     setBookingLoading(true);
-    
+    // console.log(selectedProvider)
     try {
       await userApi.createBooking({
-        service_provider_id: selectedProvider._id,
+        service_provider_id: selectedProvider.provider._id,
+        serviceId: selectedProvider.service._id,
         scheduled_date: bookingDate,
         scheduled_time: bookingTime
       });
@@ -174,136 +175,139 @@ export default function UserDashboardPage() {
 
       {/* ── Booking Modal ── */}
       <AnimatePresence>
-      {selectedService && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="usr-book-overlay" onClick={() => setSelectedService(null)}>
-          <motion.div variants={scaleUpVariant} initial="hidden" animate="visible" exit="hidden" className="usr-book-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="usr-book-modal-header">
-              <div>
-                <p style={{ fontSize: 12, color: '#64748b', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
-                  GENERAL SERVICE
-                </p>
-                <h3 className="usr-book-modal-title">{selectedService.service_name}</h3>
-              </div>
-              <button className="usr-modal-close" onClick={() => setSelectedService(null)}><X size={16} /></button>
-            </div>
-
-            <div className="usr-book-modal-body" style={{ minHeight: 250 }}>
-              {bookingStep === 'providers' && (
-                <>
-                  <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
-                    Select an available provider near you:
+        {selectedService && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="usr-book-overlay" onClick={() => setSelectedService(null)}>
+            <motion.div variants={scaleUpVariant} initial="hidden" animate="visible" exit="hidden" className="usr-book-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="usr-book-modal-header">
+                <div>
+                  <p style={{ fontSize: 12, color: '#64748b', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                    GENERAL SERVICE
                   </p>
-                  
-                  {providersLoading ? (
-                    <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
-                      <Loader2 className="usr-spin" size={24} color="#eb5e28" />
-                    </div>
-                  ) : providers.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '30px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: 10 }}>
-                       <p style={{ color: '#94a3b8', fontSize: 14 }}>No providers available for this service right now.</p>
-                    </div>
-                  ) : (
-                    providers.map((p) => (
-                      <div
-                        key={p._id}
-                        onClick={() => p.isActive && setSelectedProvider(p)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 12,
-                          padding: '12px 14px',
-                          background: selectedProvider?._id === p._id ? 'rgba(235,94,40,0.08)' : 'rgba(255,255,255,0.03)',
-                          border: `1px solid ${selectedProvider?._id === p._id ? 'rgba(235,94,40,0.4)' : 'rgba(255,255,255,0.07)'}`,
-                          borderRadius: 10,
-                          marginBottom: 10,
-                          cursor: p.isActive ? 'pointer' : 'not-allowed',
-                          opacity: p.isActive ? 1 : 0.5,
-                          transition: 'all 0.15s',
-                        }}
-                      >
-                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#eb5e28,#1c4ed8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-                          {(p.provider_id?.name || 'P')[0]}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <p style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9' }}>{p.provider_id?.name || 'Unknown Provider'}</p>
-                          <p style={{ fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <MapPin size={11} /> {p.experience} Exp · ₹{(p.charges_per_hour || 0).toLocaleString()} per hour
-                          </p>
-                        </div>
-                        {p.isActive
-                          ? <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 600, background: 'rgba(74,222,128,0.1)', padding: '2px 8px', borderRadius: 20 }}>Available</span>
-                          : <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>Busy</span>
-                        }
-                      </div>
-                    ))
-                  )}
-                </>
-              )}
-
-              {bookingStep === 'form' && (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, marginBottom: 20 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#eb5e28,#1c4ed8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff' }}>
-                      {(selectedProvider?.provider_id?.name || 'P')[0]}
-                    </div>
-                    <div>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>{selectedProvider?.provider_id?.name}</p>
-                      <p style={{ fontSize: 12, color: '#64748b' }}>{selectedProvider?.experience} Experience</p>
-                    </div>
-                  </div>
-
-                  <div className="usr-field">
-                    <label className="usr-label"><CalendarDays size={13} style={{ display: 'inline', marginRight: 5 }} />Preferred Date</label>
-                    <input type="date" className="usr-input" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} min={new Date().toISOString().split('T')[0]} />
-                  </div>
-                  <div className="usr-field">
-                    <label className="usr-label"><Clock size={13} style={{ display: 'inline', marginRight: 5 }} />Preferred Time</label>
-                    <input type="time" className="usr-input" value={bookingTime} onChange={(e) => setBookingTime(e.target.value)} />
-                  </div>
-                  <p style={{ fontSize: 12, color: '#64748b' }}>Price: <strong style={{ color: '#4ade80' }}>₹{(selectedProvider.charges_per_hour || 0).toLocaleString('en-IN')}</strong> per hour</p>
-                </>
-              )}
-
-              {bookingStep === 'success' && (
-                <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                  <div style={{ fontSize: 52, marginBottom: 16 }}>🎉</div>
-                  <h3 style={{ fontFamily: 'Outfit,sans-serif', fontSize: 20, fontWeight: 700, color: '#f1f5f9', marginBottom: 8 }}>Booking Confirmed!</h3>
-                  <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
-                    Your booking for <strong style={{ color: '#f1f5f9' }}>{selectedService.service_name}</strong> with <strong style={{ color: '#f1f5f9' }}>{selectedProvider?.provider_id?.name}</strong> has been placed.
-                  </p>
-                  <p style={{ fontSize: 13, color: '#475569', marginTop: 10 }}>
-                    Please check the My Bookings page to track status and view your OTP once confirmed.
-                  </p>
+                  <h3 className="usr-book-modal-title">{selectedService.service_name}</h3>
                 </div>
-              )}
-            </div>
+                <button className="usr-modal-close" onClick={() => setSelectedService(null)}><X size={16} /></button>
+              </div>
 
-            <div className="usr-book-modal-footer">
-              {bookingStep === 'providers' && (
-                <>
-                  <button className="usr-btn usr-btn-ghost" onClick={() => setSelectedService(null)}>Cancel</button>
-                  <button className="usr-btn usr-btn-primary" disabled={!selectedProvider} onClick={() => setBookingStep('form')}>
-                    Continue →
+              <div className="usr-book-modal-body" style={{ minHeight: 250 }}>
+                {bookingStep === 'providers' && (
+                  <>
+                    <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
+                      Select an available provider near you:
+                    </p>
+
+                    {providersLoading ? (
+                      <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+                        <Loader2 className="usr-spin" size={24} color="#eb5e28" />
+                      </div>
+                    ) : providers.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '30px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: 10 }}>
+                        <p style={{ color: '#94a3b8', fontSize: 14 }}>No providers available for this service right now.</p>
+                      </div>
+                    ) : (
+                      providers.map((p) => (
+                        <div
+                          key={p._id}
+                          onClick={() => p.isActive && setSelectedProvider(p)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            padding: '12px 14px',
+                            background: selectedProvider?._id === p._id ? 'rgba(235,94,40,0.08)' : 'rgba(255,255,255,0.03)',
+                            border: `1px solid ${selectedProvider?._id === p._id ? 'rgba(235,94,40,0.4)' : 'rgba(255,255,255,0.07)'}`,
+                            borderRadius: 10,
+                            marginBottom: 10,
+                            cursor: p.isActive ? 'pointer' : 'not-allowed',
+                            opacity: p.isActive ? 1 : 0.5,
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#eb5e28,#1c4ed8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                            {(p.provider?.user_name || 'P')[0]}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9' }}>{p.provider?.user_name || 'Unknown Provider'}</p>
+                            <p style={{ fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <MapPin size={11} /> {p.experience} Exp · ₹{(p.charges_per_hour || 0).toLocaleString()} per hour
+                            </p>
+                          </div>
+                          <div>
+                            <span>{p.averageRating ?? 0} <Star size={12} fill="#fbbf24" /> </span>
+                          </div>
+                          {p.isAvailable
+                            ? <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 600, background: 'rgba(74,222,128,0.1)', padding: '2px 8px', borderRadius: 20 }}>Available</span>
+                            : <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>Busy</span>
+                          }
+                        </div>
+                      ))
+                    )}
+                  </>
+                )}
+
+                {bookingStep === 'form' && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, marginBottom: 20 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#eb5e28,#1c4ed8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff' }}>
+                        {(selectedProvider?.provider?.user_name || 'P')[0]}
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>{selectedProvider?.provider?.user_name}</p>
+                        <p style={{ fontSize: 12, color: '#64748b' }}>{selectedProvider?.experience} yr. Experience</p>
+                      </div>
+                    </div>
+
+                    <div className="usr-field">
+                      <label className="usr-label"><CalendarDays size={13} style={{ display: 'inline', marginRight: 5 }} />Preferred Date</label>
+                      <input type="date" className="usr-input" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} min={new Date().toISOString().split('T')[0]} />
+                    </div>
+                    <div className="usr-field">
+                      <label className="usr-label"><Clock size={13} style={{ display: 'inline', marginRight: 5 }} />Preferred Time</label>
+                      <input type="time" className="usr-input" value={bookingTime} onChange={(e) => setBookingTime(e.target.value)} />
+                    </div>
+                    <p style={{ fontSize: 12, color: '#64748b' }}>Price: <strong style={{ color: '#4ade80' }}>₹{(selectedProvider.charges_per_hour || 0).toLocaleString('en-IN')}</strong> per hour</p>
+                  </>
+                )}
+
+                {bookingStep === 'success' && (
+                  <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                    <div style={{ fontSize: 52, marginBottom: 16 }}>🎉</div>
+                    <h3 style={{ fontFamily: 'Outfit,sans-serif', fontSize: 20, fontWeight: 700, color: '#f1f5f9', marginBottom: 8 }}>Booking Confirmed!</h3>
+                    <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
+                      Your booking for <strong style={{ color: '#f1f5f9' }}>{selectedService.service_name}</strong> with <strong style={{ color: '#f1f5f9' }}>{selectedProvider?.provider?.user_name}</strong> has been placed.
+                    </p>
+                    <p style={{ fontSize: 13, color: '#475569', marginTop: 10 }}>
+                      Please check the My Bookings page to track status and view your OTP once confirmed.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="usr-book-modal-footer">
+                {bookingStep === 'providers' && (
+                  <>
+                    <button className="usr-btn usr-btn-ghost" onClick={() => setSelectedService(null)}>Cancel</button>
+                    <button className="usr-btn usr-btn-primary" disabled={!selectedProvider} onClick={() => setBookingStep('form')}>
+                      Continue →
+                    </button>
+                  </>
+                )}
+                {bookingStep === 'form' && (
+                  <>
+                    <button className="usr-btn usr-btn-ghost" onClick={() => setBookingStep('providers')}>← Back</button>
+                    <button className="usr-btn usr-btn-primary" onClick={handleBook} disabled={bookingLoading || !bookingDate || !bookingTime}>
+                      {bookingLoading ? <><Loader2 size={14} className="usr-spin" /> Booking...</> : 'Confirm Booking'}
+                    </button>
+                  </>
+                )}
+                {bookingStep === 'success' && (
+                  <button className="usr-btn usr-btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setSelectedService(null)}>
+                    Done
                   </button>
-                </>
-              )}
-              {bookingStep === 'form' && (
-                <>
-                  <button className="usr-btn usr-btn-ghost" onClick={() => setBookingStep('providers')}>← Back</button>
-                  <button className="usr-btn usr-btn-primary" onClick={handleBook} disabled={bookingLoading || !bookingDate || !bookingTime}>
-                    {bookingLoading ? <><Loader2 size={14} className="usr-spin" /> Booking...</> : 'Confirm Booking'}
-                  </button>
-                </>
-              )}
-              {bookingStep === 'success' && (
-                <button className="usr-btn usr-btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setSelectedService(null)}>
-                  Done
-                </button>
-              )}
-            </div>
+                )}
+              </div>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
+        )}
       </AnimatePresence>
     </motion.div>
   );

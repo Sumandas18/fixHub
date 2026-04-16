@@ -1,8 +1,11 @@
+const mongoose = require('mongoose');
 const StatusCode = require("../utils/statusCode");
 const bookingModel = require("../models/serviceBookingModel");
 const serviceOTPModel = require("../models/serviceOtp");
 const sendOTPMails = require("../utils/sendMail");
 const generateOTP = require("../helper/generateOTP");
+const serviceModel = require('../models/serviceModel');
+const userModel = require('../models/userModel');
 
 class BookingController {
 
@@ -42,16 +45,20 @@ class BookingController {
       };
 
       if (service_provider_id) {
-         bookingData.service_provider_id = service_provider_id;
-         bookingData.scheduled_date = scheduled_date;
-         bookingData.scheduled_time = scheduled_time;
+        bookingData.service_provider_id = service_provider_id;
+        bookingData.scheduled_date = scheduled_date;
+        bookingData.scheduled_time = scheduled_time;
       }
       if (serviceId) {
-         bookingData.service_id = serviceId;
+        bookingData.service_id = serviceId;
       }
 
+      const serviceName = await serviceModel.findById(serviceId);
+
       const bookingObj = new bookingModel(bookingData);
-      const booking = await bookingObj.save();
+      const bookingDetails = await bookingObj.save();
+
+      const booking = { ...bookingDetails._doc, serviceName }
 
       const customerUser = { user_email: req.user.user_email, user_name: req.user.user_name };
       try {
@@ -96,9 +103,9 @@ class BookingController {
 
   async getProviderBookings(req, res) {
     try {
-      const provider_id = req.user.user_id;
+      const provider_id = new mongoose.Types.ObjectId(req.user.user_id);
 
-      if (!provider_id) {
+      if (!req.user.user_id) {
         return res.status(StatusCode.FORBIDDEN).json({
           success: false,
           message: "Unauthorised access"
@@ -106,8 +113,35 @@ class BookingController {
       }
 
       // Return ALL bookings for this provider (pending, accepted, rejected)
-      const bookings = await bookingModel.find({ service_provider_id: provider_id })
-        .populate("customer_id");
+      const bookings = await bookingModel.aggregate([
+        {
+          $match: {
+            service_provider_id: provider_id
+          }
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "customer_id",
+            foreignField: "_id",
+            as: "customer"
+          }
+        },
+        {
+          $lookup: {
+            from: "services",
+            localField: "service_id",
+            foreignField: "_id",
+            as: "service"
+          }
+        },
+        {
+          $unwind: "$customer"
+        },
+        {
+          $unwind: "$service"
+        }
+      ])
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,
@@ -153,6 +187,7 @@ class BookingController {
   async cancelBooking(req, res) {
     try {
       const booking_id = req.params.id;
+      const { cancellation_reason } = req.body;
 
       if (!booking_id) {
         return res.status(StatusCode.NOT_FOUND).json({
@@ -170,7 +205,7 @@ class BookingController {
         });
       }
 
-      if (booking.customer_id.toString() !== req.user.user_id.toString()) {
+      if ((booking.customer_id.toString() !== req.user.user_id.toString()) && req.user.user_role === 'customer') {
         return res.status(StatusCode.FORBIDDEN).json({
           success: false,
           message: "Unauthorized access",
@@ -184,11 +219,16 @@ class BookingController {
       }
       else {
         booking.status = "cancelled";
+        if (cancellation_reason) {
+          booking.cancellation_reason = cancellation_reason;
+        }
         await booking.save();
 
-        const cancelUser = { user_email: req.user.user_email, user_name: req.user.user_name };
+        const userDetails = await userModel.findById(booking.customer_id);
+        const serviceDetails = await serviceModel.findById(booking.service_id);
+        console.log(userDetails, booking)
         try {
-          await sendOTPMails({ user: cancelUser, booking, type: "cancelBooking" });
+          await sendOTPMails({ user: userDetails, booking, service: serviceDetails, reason: cancellation_reason, type: "cancelBooking" });
         } catch (emailErr) {
           console.error('[BookingController] cancelBooking email failed:', emailErr);
         }
@@ -199,6 +239,7 @@ class BookingController {
         });
       }
     } catch (error) {
+      console.log(error)
       return res.status(StatusCode.SERVER_ERROR).json({
         success: false,
         message: error.message,
@@ -228,11 +269,12 @@ class BookingController {
 
       if (status == "completed") {
         const otp = generateOTP();
+        const user = await userModel.findById(booking.customer_id);
 
         const otpObj = new serviceOTPModel({ bookingId: booking._id, otp });
         await otpObj.save();
 
-        sendOTPMails({ user: booking.customer_id, booking, otp, type: "taskComplete" }).catch(console.error);
+        await sendOTPMails({ user, booking, otp, type: "taskComplete" });
 
         return res.status(StatusCode.SUCCESS).json({
           success: true,
@@ -241,14 +283,14 @@ class BookingController {
 
       }
       else {
+        const service = await serviceModel.findById(booking.service_id);
+        const provider = await userModel.findById(booking.service_provider_id);
+
         booking.status = status;
         await booking.save();
 
-        if (status == "cancelled") {
-          sendOTPMails({ user: booking.customer_id, booking, reason, type: "cancelBooking" }).catch(console.error);
-        }
         if (status == "confirmed") {
-          sendOTPMails({ user: booking.customer_id, booking, type: "confirmBooking" }).catch(console.error);
+          sendOTPMails({ user: booking.customer_id, provider, booking, service, type: "confirmBooking" }).catch(console.error);
         }
 
         return res.status(StatusCode.SUCCESS).json({
@@ -259,6 +301,7 @@ class BookingController {
       }
 
     } catch (error) {
+      console.log(error)
       return res.status(StatusCode.SERVER_ERROR).json({
         success: false,
         message: error.message,

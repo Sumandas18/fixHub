@@ -21,6 +21,9 @@ const serviceBookingSchema = new schema({
     scheduled_time: {
         type: String
     },
+    cancellation_reason: {
+        type: String
+    },
     status: {
         type: String,
         enum: ['pending', 'accepted', 'rejected', 'confirmed', 'completed', 'cancelled'],

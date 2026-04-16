@@ -24,7 +24,7 @@ class RatingController {
         });
       }
 
-      if (booking.customer_id.toString() !== req.user._id.toString()) {
+      if (booking.customer_id.toString() !== req.user.user_id.toString()) {
         return res.status(StatusCode.FORBIDDEN).json({
           success: false,
           message: "Unauthorized access",
@@ -39,7 +39,7 @@ class RatingController {
       }
 
       const ratingObj = new ratingModel({
-        customer_id: req.user._id,
+        customer_id: req.user.user_id,
         provider_id: booking.service_provider_id,
         booking_id,
         stars,
@@ -55,6 +55,7 @@ class RatingController {
       });
 
     } catch (error) {
+      console.log(error)
       return res.status(StatusCode.SERVER_ERROR).json({
         success: false,
         message: error.message,

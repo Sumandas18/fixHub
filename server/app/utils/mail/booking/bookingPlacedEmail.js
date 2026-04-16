@@ -1,3 +1,5 @@
+const formatDateTime = require("../../date/formatDateTime");
+
 module.exports = (user, booking) => {
     return `
     <div style="font-family:Arial,sans-serif;background:#f3f4f6;padding:20px;">
@@ -19,9 +21,9 @@ module.exports = (user, booking) => {
                 </p>
 
                 <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:16px 0;">
-                    <p><strong>Booking ID:</strong> ${booking.bookingId}</p>
-                    <p><strong>Service:</strong> ${booking.serviceName}</p>
-                    <p><strong>Date:</strong> ${booking.date}</p>
+                    <p><strong>Booking ID:</strong> ${booking._id.toString().slice(-6).toUpperCase()}</p>
+                    <p><strong>Service:</strong> ${booking.serviceName.service_name}</p>
+                    <p><strong>Date & Time:</strong>${formatDateTime(booking.scheduled_date, booking.scheduled_time)}</p>
                     <p><strong>Status:</strong> <span style="color:#2563eb;">Waiting for confirmation</span></p>
                 </div>
 

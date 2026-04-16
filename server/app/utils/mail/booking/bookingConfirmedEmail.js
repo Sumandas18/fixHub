@@ -1,4 +1,6 @@
-module.exports = (user, booking) => {
+const formatDateTime = require("../../date/formatDateTime");
+
+module.exports = (user, provider, booking,service) => {
     return `
     <div style="font-family:Arial,sans-serif;background:#f3f4f6;padding:20px;">
         <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;overflow:hidden;">
@@ -18,10 +20,10 @@ module.exports = (user, booking) => {
                 </p>
 
                 <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:16px 0;">
-                    <p><strong>Booking ID:</strong> ${booking.bookingId}</p>
-                    <p><strong>Service:</strong> ${booking.serviceName}</p>
-                    <p><strong>Date:</strong> ${booking.date}</p>
-                    <p><strong>Provider:</strong> ${booking.providerName}</p>
+                    <p><strong>Booking ID:</strong> ${booking._id.toString().slice(-6).toUpperCase()}</p>
+                    <p><strong>Service:</strong> ${service.service_name}</p>
+                    <p><strong>Date:</strong> ${formatDateTime(booking.scheduled_date, booking.scheduled_time)}</p>
+                    <p><strong>Provider:</strong> ${provider.user_name}</p>
                 </div>
 
                 <p style="font-size:14px;color:#6b7280;">

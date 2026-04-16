@@ -6,6 +6,7 @@ import { userApi } from '@/services/api/user';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { containerVariants, fadeUpVariant, scaleUpVariant } from '@/lib/animations';
+import { providerApi } from '@/services/api/provider';
 
 const TABS = ['All', 'Upcoming', 'Accepted', 'Completed', 'Cancelled', 'Rejected'];
 
@@ -14,7 +15,8 @@ export default function UserBookingsPage() {
   const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
   const [ratingVal, setRatingVal] = useState(0);
   const [reviewText, setReviewText] = useState('');
-  
+  const [resendLoading, setResendLoading] = useState(false);
+
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,11 +60,22 @@ export default function UserBookingsPage() {
     return s;
   };
 
-  const handleRate = () => {
+  const handleRate = async () => {
+    
     if (selectedBooking) {
-      selectedBooking.rating = ratingVal;
-      toast.success('Review submitted successfully!');
-      setSelectedBooking(null);
+
+      if (!ratingVal || !reviewText) return;
+      setResendLoading(true);
+      try {
+        await providerApi.addRating({ booking_id: selectedBooking._id, stars: ratingVal, service_description: reviewText });
+
+        toast.success('Review submitted successfully');
+      } catch (err: any) {
+        toast.error(err.response?.data?.message || 'Failed to submit review');
+      } finally {
+        setSelectedBooking(null);
+        setResendLoading(false);
+      }
     }
   };
 
@@ -88,8 +101,8 @@ export default function UserBookingsPage() {
 
       <motion.div variants={fadeUpVariant} className="usr-card">
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: 40}}>
-             <Loader2 className="usr-spin" size={24} color="#eb5e28" />
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
+            <Loader2 className="usr-spin" size={24} color="#eb5e28" />
           </div>
         ) : (
           <table className="usr-table">
@@ -168,55 +181,56 @@ export default function UserBookingsPage() {
 
       {/* Rating Modal */}
       <AnimatePresence>
-      {selectedBooking && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="usr-book-overlay" onClick={() => setSelectedBooking(null)}>
-          <motion.div variants={scaleUpVariant} initial="hidden" animate="visible" exit="hidden" className="usr-book-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="usr-book-modal-header">
-              <h3 className="usr-book-modal-title">Rate Service</h3>
-              <button className="usr-modal-close" onClick={() => setSelectedBooking(null)}><X size={16} /></button>
-            </div>
-            <div className="usr-book-modal-body">
-              <div style={{ marginBottom: 20 }}>
-                <p style={{ fontSize: 13, color: '#64748b' }}>Provider</p>
-                <p style={{ fontSize: 16, fontWeight: 600, color: '#f1f5f9' }}>{selectedBooking.service_provider_id?.provider_id?.name || 'Provider'}</p>
-                <p style={{ fontSize: 13, color: '#94a3b8' }}>{selectedBooking.service_provider_id?.service_id?.service_name || 'Booked Service'}</p>
+        {selectedBooking && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="usr-book-overlay" onClick={() => setSelectedBooking(null)}>
+            <motion.div variants={scaleUpVariant} initial="hidden" animate="visible" exit="hidden" className="usr-book-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="usr-book-modal-header">
+                <h3 className="usr-book-modal-title">Rate Service</h3>
+                <button className="usr-modal-close" onClick={() => setSelectedBooking(null)}><X size={16} /></button>
               </div>
+              <div className="usr-book-modal-body">
+                <div style={{ marginBottom: 20 }}>
+                  <p style={{ fontSize: 13, color: '#64748b' }}>Provider</p>
+                  <p style={{ fontSize: 16, fontWeight: 600, color: '#f1f5f9' }}>{selectedBooking.service_provider_id?.provider_id?.name || 'Provider'}</p>
+                  <p style={{ fontSize: 13, color: '#94a3b8' }}>{selectedBooking.service_provider_id?.service_id?.service_name || 'Booked Service'}</p>
+                </div>
 
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-                <div className="usr-star-row">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <span
-                      key={star}
-                      className={`usr-star ${star <= ratingVal ? 'filled' : 'empty'}`}
-                      onClick={() => setRatingVal(star)}
-                    >
-                      ★
-                    </span>
-                  ))}
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+                  <div className="usr-star-row">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span
+                        key={star}
+                        className={`usr-star ${star <= ratingVal ? 'filled' : 'empty'}`}
+                        onClick={() => setRatingVal(star)}
+                      >
+                        ★
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="usr-field">
+                  <label className="usr-label">Write a review (optional)</label>
+                  <textarea
+                    className="usr-input"
+                    rows={4}
+                    placeholder="How was your experience?"
+                    value={reviewText}
+                    onChange={(e) => setReviewText(e.target.value)}
+                    style={{ resize: 'vertical' }}
+                  />
                 </div>
               </div>
-
-              <div className="usr-field">
-                <label className="usr-label">Write a review (optional)</label>
-                <textarea
-                  className="usr-input"
-                  rows={4}
-                  placeholder="How was your experience?"
-                  value={reviewText}
-                  onChange={(e) => setReviewText(e.target.value)}
-                  style={{ resize: 'vertical' }}
-                />
+              <div className="usr-book-modal-footer">
+                <button className="usr-btn usr-btn-ghost" onClick={() => setSelectedBooking(null)}>Cancel</button>
+                <button className={`usr-btn usr-btn-primary ${resendLoading ? 'cursor-not-allowed' : 'cursor-pointer'}`} disabled={ratingVal === 0} onClick={()=>handleRate()}>
+                  {resendLoading && <Loader2 className="usr-spin" size={14} color="#fff" style={{ marginRight: 2 }} />}
+                  {resendLoading ? 'Submitting...' : 'Submit Review'}
+                </button>
               </div>
-            </div>
-            <div className="usr-book-modal-footer">
-              <button className="usr-btn usr-btn-ghost" onClick={() => setSelectedBooking(null)}>Cancel</button>
-              <button className="usr-btn usr-btn-primary" disabled={ratingVal === 0} onClick={handleRate}>
-                Submit Review
-              </button>
-            </div>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
+        )}
       </AnimatePresence>
     </motion.div>
   );

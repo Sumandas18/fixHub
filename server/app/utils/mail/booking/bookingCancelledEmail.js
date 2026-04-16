@@ -1,4 +1,4 @@
-module.exports = (user, booking, reason = "") => {
+module.exports = (user, booking,service, reason = "") => {
     return `
     <div style="font-family:Arial,sans-serif;background:#f3f4f6;padding:20px;">
         <div style="max-width:520px;margin:auto;background:#ffffff;border-radius:12px;overflow:hidden;">
@@ -15,8 +15,8 @@ module.exports = (user, booking, reason = "") => {
                 </p>
 
                 <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:16px 0;">
-                    <p><strong>Booking ID:</strong> ${booking.bookingId}</p>
-                    <p><strong>Service:</strong> ${booking.serviceName}</p>
+                    <p><strong>Booking ID:</strong> ${booking._id.toString().slice(-6).toUpperCase()}</p>
+                    <p><strong>Service:</strong> ${service.service_name}</p>
                     ${reason
             ? `<p><strong>Reason:</strong> ${reason}</p>`
             : ""

@@ -17,7 +17,7 @@ export const userApi = {
     const res = await apiClient.get(`/service-provider?service_id=${serviceId}`);
     return res.data;
   },
-  createBooking: async (data: { service_provider_id: string, scheduled_date: string, scheduled_time: string }) => {
+  createBooking: async (data: { service_provider_id: string, serviceId: string, scheduled_date: string, scheduled_time: string }) => {
     const res = await apiClient.post('/booking', data);
     return res.data;
   }
