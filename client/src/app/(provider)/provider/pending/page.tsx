@@ -170,8 +170,8 @@ export default function ProviderPendingPage() {
                whileHover={{ scale: 1.05 }}
                whileTap={{ scale: 0.95 }}
                onClick={() => {
-                 console.log("CLICKED");
-                 handleAuthorized();
+                 console.log("CLICKED NAVIGATION");
+                 window.location.href = '/provider/dashboard';
                }}
                style={{
                  padding: '0.9rem 2rem',

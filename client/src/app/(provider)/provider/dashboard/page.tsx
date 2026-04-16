@@ -43,6 +43,7 @@ export default function ProviderDashboardPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    console.log("DASHBOARD LOADED");
     let cancelled = false;
 
     const loadData = async () => {

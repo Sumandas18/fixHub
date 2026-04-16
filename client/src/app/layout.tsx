@@ -30,6 +30,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${inter.variable} ${outfit.variable}`}
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
       <body>

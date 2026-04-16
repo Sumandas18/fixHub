@@ -7,12 +7,12 @@ const rolePaths = {
   user: '/dashboard'
 };
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const role = request.cookies.get('role')?.value;
   const { pathname } = request.nextUrl;
 
-  // Authentication checks via cookies have been removed. 
+  // Authentication checks via cookies have been removed.
   // Client-side wrappers/components or Zustand hydration now fully control access.
   return NextResponse.next();
 }

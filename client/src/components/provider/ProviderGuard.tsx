@@ -24,18 +24,18 @@ export default function ProviderGuard({ children }: { children: React.ReactNode 
     }
 
     if (user?.role === 'provider' || user?.user_role === 'provider') {
-      const status = user?.providerDetails?.status;
+      const status = (user as any)?.providerStatus ?? user?.providerDetails?.status;
       if (status !== 'approved' && pathname !== '/provider/pending') {
-        router.push('/provider/pending');
+        router.replace('/provider/pending');
       } else if (status === 'approved' && pathname === '/provider/pending') {
-        router.push('/provider/dashboard');
+        router.replace('/provider/dashboard');
       }
     }
   }, [user, isAuthenticated, router, pathname, mounted]);
 
   if (!mounted) return null; // avoid hydration mismatch
 
-  const status = user?.providerDetails?.status;
+  const status = (user as any)?.providerStatus ?? user?.providerDetails?.status;
   if ((status !== 'approved') && pathname !== '/provider/pending') {
     return null; // hide content while redirecting
   }
