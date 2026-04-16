@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { Search, Star, X, CalendarDays, Clock, Loader2, MapPin } from 'lucide-react';
 import { userApi } from '@/services/api/user';
@@ -17,6 +18,25 @@ const getRandomEmoji = (category: string) => {
     'Electricity': '⚡', 'Plumbing': '🚿', 'Cleaning': '🏠', 'Carpentry': '🪵', 'Painting': '🎨'
   };
   return map[category] || '🔧';
+};
+
+const getServiceCategory = (service: any) => {
+  const name = (service.service_name || '').toLowerCase();
+  if (name.includes('electri')) return 'Electricity';
+  if (name.includes('plumb')) return 'Plumbing';
+  if (name.includes('clean')) return 'Cleaning';
+  if (name.includes('carpentry') || name.includes('wood') || name.includes('maintenance') || name.includes('handyman')) return 'Carpentry';
+  if (name.includes('paint')) return 'Painting';
+  return 'General';
+};
+
+const normalizeServiceImage = (src?: string) => {
+  if (!src) return '';
+  const trimmed = src.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/')) {
+    return trimmed;
+  }
+  return `/${trimmed.replace(/^\/+/, '')}`;
 };
 
 export default function UserDashboardPage() {
@@ -37,6 +57,8 @@ export default function UserDashboardPage() {
   const [bookingTime, setBookingTime] = useState('');
   const [bookingStep, setBookingStep] = useState<'providers' | 'form' | 'success'>('providers');
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [hasCompleteAddress, setHasCompleteAddress] = useState(false);
+  const [profileStatusLoading, setProfileStatusLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboardServices = async () => {
@@ -52,14 +74,36 @@ export default function UserDashboardPage() {
     fetchDashboardServices();
   }, []);
 
+  useEffect(() => {
+    const checkAddress = async () => {
+      try {
+        const res = await userApi.getProfile();
+        const u = res.data || res;
+        const address = u.user_address || {};
+        const hasAddress = Boolean(address.houseOrFlatNo && address.street && address.area && address.city && address.state && address.pinCode);
+        setHasCompleteAddress(hasAddress);
+      } catch (error) {
+        setHasCompleteAddress(false);
+      } finally {
+        setProfileStatusLoading(false);
+      }
+    };
+    checkAddress();
+  }, []);
+
   const filtered = services.filter((s) => {
-    const defaultCategory = 'General'; // fallback if backend doesn't have a category
-    const catMatch = activeCategory === 'All' || defaultCategory === activeCategory;
+    const serviceCategory = getServiceCategory(s);
+    const catMatch = activeCategory === 'All' || serviceCategory === activeCategory;
     const searchMatch = s.service_name.toLowerCase().includes(searchQuery.toLowerCase());
     return catMatch && searchMatch;
   });
 
   const openBooking = async (service: any) => {
+    if (!profileStatusLoading && !hasCompleteAddress) {
+      toast.error('Complete your profile address before booking a service.');
+      return;
+    }
+
     setSelectedService(service);
     setSelectedProvider(null);
     setBookingDate('');
@@ -70,7 +114,7 @@ export default function UserDashboardPage() {
     setProvidersLoading(true);
     try {
       const res = await userApi.getProvidersByService(service._id);
-      setProviders(res.data || []);
+      setProviders((res.data || []).filter((provider: any) => provider.isAvailable !== false));
     } catch (err) {
       toast.error('Failed to load providers');
     } finally {
@@ -154,10 +198,23 @@ export default function UserDashboardPage() {
         <motion.div variants={containerVariants} className="usr-services-grid">
           {filtered.map((s, i) => (
             <motion.div variants={fadeUpVariant} whileHover={{ scale: 1.02 }} key={s._id} className="usr-service-card" onClick={() => openBooking(s)}>
-              <div className="usr-service-card-banner" style={{ background: BANNER_COLORS[i % BANNER_COLORS.length] }} />
+              <div className="usr-service-card-banner" style={{ background: BANNER_COLORS[i % BANNER_COLORS.length], position: 'relative', overflow: 'hidden', height: 140 }}>
+                {normalizeServiceImage(s.service_image_url) ? (
+                  <Image
+                    src={normalizeServiceImage(s.service_image_url)}
+                    alt={s.service_name}
+                    fill
+                    style={{ objectFit: 'cover', opacity: 0.92 }}
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: 32 }}>{getRandomEmoji(getServiceCategory(s))}</span>
+                  </div>
+                )}
+              </div>
               <div className="usr-service-card-body">
                 <div className="usr-service-card-top">
-                  <div className="usr-service-emoji">{getRandomEmoji('General')}</div>
+                  <div className="usr-service-emoji">{getRandomEmoji(getServiceCategory(s))}</div>
                   <div className="usr-service-rating">
                     <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 600 }}>Active</span>
                   </div>
@@ -207,7 +264,7 @@ export default function UserDashboardPage() {
                       providers.map((p) => (
                         <div
                           key={p._id}
-                          onClick={() => p.isActive && setSelectedProvider(p)}
+                          onClick={() => p.isAvailable && setSelectedProvider(p)}
                           style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -217,8 +274,8 @@ export default function UserDashboardPage() {
                             border: `1px solid ${selectedProvider?._id === p._id ? 'rgba(235,94,40,0.4)' : 'rgba(255,255,255,0.07)'}`,
                             borderRadius: 10,
                             marginBottom: 10,
-                            cursor: p.isActive ? 'pointer' : 'not-allowed',
-                            opacity: p.isActive ? 1 : 0.5,
+                            cursor: p.isAvailable ? 'pointer' : 'not-allowed',
+                            opacity: p.isAvailable ? 1 : 0.5,
                             transition: 'all 0.15s',
                           }}
                         >

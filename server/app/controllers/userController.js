@@ -7,6 +7,7 @@ const tokenModel = require("../models/tokenModel");
 
 const StatusCode = require("../utils/statusCode");
 const passwordValidation = require("./../utils/validation/checkPasswordValidation");
+const checkCustomerUpdateValidate = require("../utils/validation/update/checkUpdateCustomerValidation");
 const sendOTPMails = require("../utils/sendMail");
 const generateOTP = require("../helper/generateOTP");
 
@@ -263,6 +264,62 @@ class UserController {
             }
         }
         catch (error) {
+            return res.status(StatusCode.SERVER_ERROR).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
+
+    async updateProfile(req, res) {
+        try {
+            const user = req.user;
+            if (!user) {
+                return res.status(StatusCode.FORBIDDEN).json({
+                    success: false,
+                    message: "Unauthorised access"
+                });
+            }
+
+            const { user_name, user_contact, user_address } = req.body;
+            const { error, value } = checkCustomerUpdateValidate.validate({ user_name, user_contact, user_address }, { abortEarly: false, stripUnknown: true });
+
+            if (error) {
+                return res.status(StatusCode.BAD_REQUEST).json({
+                    success: false,
+                    message: error.details.map((err) => err.message).join(', ')
+                });
+            }
+
+            const userDetails = await userModel.findById(user.user_id);
+            if (!userDetails) {
+                return res.status(StatusCode.NOT_FOUND).json({
+                    success: false,
+                    message: "User not found"
+                });
+            }
+
+            if (value.user_name) {
+                userDetails.user_name = value.user_name;
+            }
+            if (value.user_contact) {
+                userDetails.user_contact = value.user_contact;
+            }
+            if (value.user_address) {
+                userDetails.user_address = {
+                    ...userDetails.user_address,
+                    ...value.user_address
+                };
+            }
+
+            await userDetails.save();
+
+            return res.status(StatusCode.SUCCESS).json({
+                success: true,
+                message: "Profile updated successfully",
+                data: userDetails
+            });
+        } catch (error) {
             return res.status(StatusCode.SERVER_ERROR).json({
                 success: false,
                 message: error.message

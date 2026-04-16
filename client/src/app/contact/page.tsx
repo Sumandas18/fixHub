@@ -1,10 +1,11 @@
 'use client';
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Header/Header';
 import Footer from '@/components/Footer/Footer';
 import { Mail, Phone, MapPin, Send, Loader2, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { userApi } from '@/services/api/user';
 
 const contactInfo = [
   { icon: Mail,   label: 'Email Us',    value: 'support@fixhub.com',        color: '#a855f7' },
@@ -22,20 +23,30 @@ export default function ContactPage() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) {
       toast.error('Please fill in all required fields');
       return;
     }
     setLoading(true);
-    // Simulate a form submission (no backend needed per requirements)
-    await new Promise((r) => setTimeout(r, 1400));
-    setLoading(false);
-    setSent(true);
-    toast.success('Message sent! We\'ll get back to you soon.');
-    setForm({ name:'', email:'', subject:'', message:'' });
-    setTimeout(() => setSent(false), 4000);
+    try {
+      await userApi.createContact({
+        name: form.name,
+        email: form.email,
+        subject: form.subject || 'General inquiry',
+        message: form.message
+      });
+      setSent(true);
+      toast.success("Message sent! We'll get back to you soon.");
+      setForm({ name:'', email:'', subject:'', message:'' });
+      setTimeout(() => setSent(false), 4000);
+    } catch (error: any) {
+      const errMsg = error.response?.data?.message || 'Failed to send message';
+      toast.error(Array.isArray(errMsg) ? errMsg.join(', ') : errMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputStyle = {

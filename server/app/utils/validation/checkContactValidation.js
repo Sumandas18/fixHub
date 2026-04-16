@@ -1,6 +1,14 @@
 const Joi = require('joi');
 
 const checkContactValidation = Joi.object({
+    contactId: Joi.string()
+        .trim()
+        .required()
+        .messages({
+            'string.base': 'Contact ID must be a string',
+            'string.empty': 'Contact ID is required'
+        }),
+
     name: Joi.string()
         .trim()
         .min(2)

@@ -19,6 +19,10 @@ const addressUpdateSchema = JOI.object({
 
 const checkCustomerUpdateValidate = JOI.object({
 
+    user_name: JOI.string().min(2).messages({
+        "string.min": "Name must be at least 2 characters"
+    }),
+
     user_contact: JOI.string()
         .pattern(/^[0-9]{10}$/)
         .messages({

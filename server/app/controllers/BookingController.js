@@ -13,6 +13,15 @@ class BookingController {
     try {
       const { service_provider_id, serviceId, scheduled_date, scheduled_time } = req.body;
 
+      const customer = await userModel.findById(req.user.user_id).lean();
+      const address = customer?.user_address || {};
+      if (!address.houseOrFlatNo || !address.street || !address.area || !address.city || !address.state || !address.pinCode) {
+        return res.status(StatusCode.BAD_REQUEST).json({
+          success: false,
+          message: "Please complete your profile address before booking a service.",
+        });
+      }
+
       // Ensure at least one target is provided
       if (!service_provider_id && !serviceId) {
         return res.status(StatusCode.BAD_REQUEST).json({
@@ -103,8 +112,6 @@ class BookingController {
 
   async getProviderBookings(req, res) {
     try {
-      const provider_id = new mongoose.Types.ObjectId(req.user.user_id);
-
       if (!req.user.user_id) {
         return res.status(StatusCode.FORBIDDEN).json({
           success: false,
@@ -112,7 +119,9 @@ class BookingController {
         })
       }
 
-      // Return ALL bookings for this provider (pending, accepted, rejected)
+      const provider_id = new mongoose.Types.ObjectId(req.user.user_id);
+
+      // Return ALL bookings for this provider (pending, accepted, rejected, completed, etc)
       const bookings = await bookingModel.aggregate([
         {
           $match: {
@@ -136,10 +145,19 @@ class BookingController {
           }
         },
         {
-          $unwind: "$customer"
+          $unwind: {
+            path: "$customer",
+            preserveNullAndEmptyArrays: true
+          }
         },
         {
-          $unwind: "$service"
+          $unwind: {
+            path: "$service",
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $sort: { scheduled_date: -1 }
         }
       ])
 

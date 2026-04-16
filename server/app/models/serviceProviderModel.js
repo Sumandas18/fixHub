@@ -29,8 +29,8 @@ const serviceProviderSchema = new schema({
         default: null         // optional until profile is completed
     },
     charges_per_hour: {
-        type: String,
-        default: "0"
+        type: Number,
+        default: 0
     },
     status: {
         type: String,

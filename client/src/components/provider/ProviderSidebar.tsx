@@ -62,7 +62,10 @@ export default function ProviderSidebar() {
   }, []);
 
   useEffect(() => {
-    setAvailable(services?.[0]?.isAvailable)
+    const initialAvailability = services?.[0]?.isAvailable;
+    if (typeof initialAvailability === 'boolean') {
+      setAvailable(initialAvailability);
+    }
   }, [services])
 
   const handleLogout = () => {

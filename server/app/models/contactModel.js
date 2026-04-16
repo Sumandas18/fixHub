@@ -25,7 +25,7 @@ const contactSchema = new schema({
     },
     reply: {
         type: String,
-        required: true
+        default: ''
     },
     status: {
         type: String,

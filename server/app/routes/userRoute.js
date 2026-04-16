@@ -12,6 +12,7 @@ Router.get("/logout", userController.userLogout);
 
 // Profile 
 Router.get("/profile", userAuthCheck(['provider', 'customer']), userController.fetchProfile);
+Router.patch("/profile", userAuthCheck(['provider', 'customer']), userController.updateProfile);
 Router.patch("/password", userAuthCheck(['provider', 'customer']), userController.updatePassword);
 
 Router.put("/status/:id", userAuthCheck(['admin']), userController.blockUnblockUser);

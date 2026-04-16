@@ -316,7 +316,7 @@ export default function ProviderBookingsPage() {
                 <div style={{ marginBottom: 10 }}>
                   <p style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>Booking</p>
                   <p style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9' }}>
-                    {statusModal._id.substring(statusModal._id.length - 6).toUpperCase()} · {statusModal.customer_id?.name || 'Customer'}
+                    {statusModal._id.substring(statusModal._id.length - 6).toUpperCase()} · {statusModal.customer?.user_name || statusModal.customer?.name || 'Customer'}
                   </p>
                 </div>
 

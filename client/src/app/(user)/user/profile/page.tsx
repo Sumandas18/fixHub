@@ -14,6 +14,7 @@ export default function UserProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [pwdLoading, setPwdLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
   const [pwdData, setPwdData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
   
@@ -25,9 +26,26 @@ export default function UserProfilePage() {
     name: '',
     email: '',
     phone: '',
-    address: '',
     verified: false,
+    address: {
+      houseOrFlatNo: '',
+      buildingName: '',
+      street: '',
+      area: '',
+      landmark: '',
+      city: '',
+      district: '',
+      state: '',
+      pinCode: '',
+      country: 'India',
+    }
   });
+
+  const formatAddress = (address: any) => {
+    if (!address) return 'No address provided';
+    const value = `${address.houseOrFlatNo ? address.houseOrFlatNo + ', ' : ''}${address.buildingName ? address.buildingName + ', ' : ''}${address.street || ''}${address.area ? ', ' + address.area : ''}${address.city ? ', ' + address.city : ''}${address.state ? ', ' + address.state : ''}${address.pinCode ? ', ' + address.pinCode : ''}`.replace(/^(, )+|(, )+$/g, '');
+    return value || 'No address provided';
+  };
 
   // Fetch live profile data from GET /user/profile; fall back to Zustand store
   useEffect(() => {
@@ -35,25 +53,45 @@ export default function UserProfilePage() {
       try {
         const res = await userApi.getProfile();
         const u = res.data || res;
+        const addressSource = u.user_address || u.address || {};
         setProfile({
-          name: u.name || u.user_name || user?.name || 'Guest User',
-          email: u.email || u.user_email || user?.email || 'No email provided',
-          phone: u.contact || u.user_contact || user?.contact || 'No phone provided',
-          address: u.address?.city
-            ? `${u.address.street || ''}, ${u.address.city}, ${u.address.state}`
-            : 'No address provided',
+          name: u.user_name || u.name || user?.name || 'Guest User',
+          email: u.user_email || u.email || user?.email || 'No email provided',
+          phone: u.user_contact || u.contact || user?.contact || 'No phone provided',
+          address: {
+            houseOrFlatNo: addressSource.houseOrFlatNo || '',
+            buildingName: addressSource.buildingName || '',
+            street: addressSource.street || '',
+            area: addressSource.area || '',
+            landmark: addressSource.landmark || '',
+            city: addressSource.city || '',
+            district: addressSource.district || '',
+            state: addressSource.state || '',
+            pinCode: addressSource.pinCode || '',
+            country: addressSource.country || 'India',
+          },
           verified: u.isVerified ?? user?.isVerified ?? false,
         });
       } catch {
         // Fallback: populate from Zustand store
         if (user) {
+          const fallbackAddress = user.user_address || user.address || {};
           setProfile({
-            name: user.name || user.user_name || 'Guest User',
-            email: user.email || user.user_email || 'No email provided',
-            phone: user.contact || user.user_contact || 'No phone provided',
-            address: user.address?.city
-              ? `${user.address.street || ''}, ${user.address.city}, ${user.address.state}`
-              : 'No address provided',
+            name: user.user_name || user.name || 'Guest User',
+            email: user.user_email || user.email || 'No email provided',
+            phone: user.user_contact || user.contact || 'No phone provided',
+            address: {
+              houseOrFlatNo: fallbackAddress.houseOrFlatNo || '',
+              buildingName: fallbackAddress.buildingName || '',
+              street: fallbackAddress.street || '',
+              area: fallbackAddress.area || '',
+              landmark: fallbackAddress.landmark || '',
+              city: fallbackAddress.city || '',
+              district: fallbackAddress.district || '',
+              state: fallbackAddress.state || '',
+              pinCode: fallbackAddress.pinCode || '',
+              country: fallbackAddress.country || 'India',
+            },
             verified: user.isVerified || false,
           });
         }
@@ -65,9 +103,43 @@ export default function UserProfilePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSave = () => {
-    setIsEditing(false);
-    toast.success('Profile updated successfully (Mock)');
+  const handleSave = async () => {
+    setSaveLoading(true);
+    try {
+      const payload: any = {
+        user_name: profile.name,
+        user_contact: profile.phone,
+        user_address: profile.address,
+      };
+
+      const res = await userApi.updateProfile(payload);
+      const updated = res.data || res;
+
+      setProfile((current) => ({
+        ...current,
+        name: updated.user_name || updated.name || current.name,
+        email: updated.user_email || updated.email || current.email,
+        phone: updated.user_contact || updated.contact || current.phone,
+        address: {
+          houseOrFlatNo: updated.user_address?.houseOrFlatNo || current.address.houseOrFlatNo,
+          buildingName: updated.user_address?.buildingName || current.address.buildingName,
+          street: updated.user_address?.street || current.address.street,
+          area: updated.user_address?.area || current.address.area,
+          landmark: updated.user_address?.landmark || current.address.landmark,
+          city: updated.user_address?.city || current.address.city,
+          district: updated.user_address?.district || current.address.district,
+          state: updated.user_address?.state || current.address.state,
+          pinCode: updated.user_address?.pinCode || current.address.pinCode,
+          country: updated.user_address?.country || current.address.country,
+        },
+      }));
+      setIsEditing(false);
+      toast.success('Profile updated successfully');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
@@ -152,8 +224,8 @@ export default function UserProfilePage() {
                   <Edit2 size={13} /> Edit Profile
                 </button>
               ) : (
-                <button className="usr-btn usr-btn-primary usr-btn-sm" onClick={handleSave}>
-                  <Check size={13} /> Save Changes
+                <button className="usr-btn usr-btn-primary usr-btn-sm" onClick={handleSave} disabled={saveLoading}>
+                  {saveLoading ? 'Saving...' : (<><Check size={13} /> Save Changes</>)}
                 </button>
               )}
             </div>
@@ -190,10 +262,91 @@ export default function UserProfilePage() {
               <div>
                 <label className="usr-label"><MapPin size={13} style={{ display: 'inline', marginRight: 6 }} />Saved Address</label>
                 {isEditing ? (
-                  <textarea className="usr-input" rows={3} value={profile.address} onChange={(e) => setProfile({ ...profile, address: e.target.value })} style={{ resize: 'vertical' }} />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <div>
+                      <label className="usr-label">House / Flat No.</label>
+                      <input
+                        className="usr-input"
+                        value={profile.address.houseOrFlatNo}
+                        onChange={(e) => setProfile({ ...profile, address: { ...profile.address, houseOrFlatNo: e.target.value } })}
+                      />
+                    </div>
+                    <div>
+                      <label className="usr-label">Building Name</label>
+                      <input
+                        className="usr-input"
+                        value={profile.address.buildingName}
+                        onChange={(e) => setProfile({ ...profile, address: { ...profile.address, buildingName: e.target.value } })}
+                      />
+                    </div>
+                    <div>
+                      <label className="usr-label">Street</label>
+                      <input
+                        className="usr-input"
+                        value={profile.address.street}
+                        onChange={(e) => setProfile({ ...profile, address: { ...profile.address, street: e.target.value } })}
+                      />
+                    </div>
+                    <div>
+                      <label className="usr-label">Area / Locality</label>
+                      <input
+                        className="usr-input"
+                        value={profile.address.area}
+                        onChange={(e) => setProfile({ ...profile, address: { ...profile.address, area: e.target.value } })}
+                      />
+                    </div>
+                    <div>
+                      <label className="usr-label">Landmark</label>
+                      <input
+                        className="usr-input"
+                        value={profile.address.landmark}
+                        onChange={(e) => setProfile({ ...profile, address: { ...profile.address, landmark: e.target.value } })}
+                      />
+                    </div>
+                    <div>
+                      <label className="usr-label">District</label>
+                      <input
+                        className="usr-input"
+                        value={profile.address.district}
+                        onChange={(e) => setProfile({ ...profile, address: { ...profile.address, district: e.target.value } })}
+                      />
+                    </div>
+                    <div>
+                      <label className="usr-label">City</label>
+                      <input
+                        className="usr-input"
+                        value={profile.address.city}
+                        onChange={(e) => setProfile({ ...profile, address: { ...profile.address, city: e.target.value } })}
+                      />
+                    </div>
+                    <div>
+                      <label className="usr-label">State</label>
+                      <input
+                        className="usr-input"
+                        value={profile.address.state}
+                        onChange={(e) => setProfile({ ...profile, address: { ...profile.address, state: e.target.value } })}
+                      />
+                    </div>
+                    <div>
+                      <label className="usr-label">PIN Code</label>
+                      <input
+                        className="usr-input"
+                        value={profile.address.pinCode}
+                        onChange={(e) => setProfile({ ...profile, address: { ...profile.address, pinCode: e.target.value } })}
+                      />
+                    </div>
+                    <div>
+                      <label className="usr-label">Country</label>
+                      <input
+                        className="usr-input"
+                        value={profile.address.country}
+                        onChange={(e) => setProfile({ ...profile, address: { ...profile.address, country: e.target.value } })}
+                      />
+                    </div>
+                  </div>
                 ) : (
                   <p style={{ fontSize: 15, color: '#f1f5f9', padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', lineHeight: 1.5 }}>
-                    {profile.address}
+                    {formatAddress(profile.address)}
                   </p>
                 )}
               </div>

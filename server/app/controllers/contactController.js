@@ -28,7 +28,7 @@ class ContactController {
                 });
             }
 
-            const contactObj = new contactModel({ name, email, subject, message });
+            const contactObj = new contactModel({ contactId, name, email, subject, message });
 
             const contact = await contactObj.save();
             sendOTPMails({ contact, type: "messageReceived" }).catch(console.error);

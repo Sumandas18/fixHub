@@ -22,6 +22,13 @@ interface Service {
   createdAt?: string;
 }
 
+/* ── Cache-busting helper ── */
+const addCacheBuster = (url?: string) => {
+  if (!url) return '';
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}t=${Date.now()}`;
+};
+
 /* ── 9 default services (seeded when DB is empty) ── */
 const DEFAULT_SERVICES: { name: string; description: string }[] = [
   { name: 'Home Appliance Repair', description: 'Professional repair of washing machines, dishwashers, dryers, ovens and all major home appliances.' },
@@ -160,7 +167,7 @@ export default function AdminServicesPage() {
     setEditName(s.service_name);
     setEditDesc(s.service_description);
     setEditImgFile(null);
-    setEditImgPreview(s.service_image_url || null);
+    setEditImgPreview(s.service_image_url ? addCacheBuster(s.service_image_url) : null);
   };
 
   const handleEditFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -193,6 +200,9 @@ export default function AdminServicesPage() {
 
       toast.success('Service updated successfully!');
       setEditService(null);
+      
+      // Refetch services to get updated image URL and other changes
+      await fetchServices();
     } catch (err: any) { 
       toast.error(err.response?.data?.message || 'Failed to update service');
     } finally {
@@ -319,7 +329,7 @@ export default function AdminServicesPage() {
                   <td style={{ color: '#4a5568', fontFamily: 'monospace', fontSize: 12 }}>{i + 1}</td>
                   <td>
                     {s.service_image_url ? (
-                      <img src={s.service_image_url} alt={s.service_name} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
+                      <img src={addCacheBuster(s.service_image_url)} alt={s.service_name} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
                     ) : (
                       <div style={{ width: 40, height: 40, borderRadius: 8, background: 'linear-gradient(135deg,#eb5e28,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Wrench size={16} color="#fff" />

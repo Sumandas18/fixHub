@@ -44,6 +44,15 @@ const fadeUp = {
   visible: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.5, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] as any } }),
 };
 
+const normalizeImageSrc = (src?: string) => {
+  if (!src) return '';
+  const trimmed = src.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/')) {
+    return trimmed;
+  }
+  return `/${trimmed.replace(/^\/+/, '')}`;
+};
+
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -156,8 +165,8 @@ export default function ServicesPage() {
                     >
                       {/* Icon banner */}
                       <div style={{ height:130, background:`linear-gradient(135deg,${c1}18,${c2}14)`, borderBottom:'1px solid rgba(255,255,255,0.04)', display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
-                        {svc.service_image_url ? (
-                          <Image src={svc.service_image_url} alt={svc.service_name} fill style={{ objectFit:'cover', opacity:0.7 }} />
+                        {normalizeImageSrc(svc.service_image_url) ? (
+                          <Image src={normalizeImageSrc(svc.service_image_url)} alt={svc.service_name} fill style={{ objectFit:'cover', opacity:0.7 }} />
                         ) : (
                           <div style={{ width:64, height:64, borderRadius:18, background:`linear-gradient(135deg,${c1}30,${c2}20)`, border:`1px solid ${c1}30`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:30 }}>
                             {icon}

@@ -31,6 +31,7 @@ export default function ProviderDashboardPage() {
   const [data, setData] = useState({
     bookings: [],
   });
+  const [providerProfile, setProviderProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   // Complete Profile Modal State
@@ -51,6 +52,14 @@ export default function ProviderDashboardPage() {
         // Dashboard NEVER redirects — just loads data
         const bookingsData = await providerApi.getBookings();
         if (!cancelled) setData({ bookings: bookingsData.data || [] });
+
+        const providerData = await providerApi.getServices();
+        const providerProfile = (providerData.data || [])[0] || null;
+        if (!cancelled) {
+          setProviderProfile(providerProfile);
+          console.log('Provider Profile Loaded:', providerProfile);
+          console.log('Charges per hour:', providerProfile?.charges_per_hour);
+        }
 
         const servicesData = await adminApi.getServices();
         if (!cancelled) setServicesList(servicesData.data || []);
@@ -236,7 +245,37 @@ export default function ProviderDashboardPage() {
   const totalBookings = data.bookings.length;
   const completedJobs = data.bookings.filter((b: any) => b.status === 'completed').length;
   const pendingRequests = data.bookings.filter((b: any) => b.status === 'pending').length;
-  const avgRating = "4.8"; // Hardcoded till rating logic is attached
+
+  const providerRate = Number(providerProfile?.charges_per_hour || 0);
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const weekAgo = new Date(now);
+  weekAgo.setDate(now.getDate() - 7);
+
+  const completedBookings = data.bookings.filter((b: any) => b.status === 'completed');
+  const completedThisMonth = completedBookings.filter((b: any) => {
+    const when = new Date(b.scheduled_date);
+    return when >= startOfMonth && when <= now;
+  });
+  const completedThisWeek = completedBookings.filter((b: any) => {
+    const when = new Date(b.scheduled_date);
+    return when >= weekAgo && when <= now;
+  });
+
+  // Debug logging
+  console.log('ProviderRate:', providerRate);
+  console.log('Completed bookings count:', completedBookings.length);
+  console.log('Completed this month:', completedThisMonth.length);
+  console.log('Provider Profile:', providerProfile);
+
+  const totalEarningsThisMonth = completedThisMonth.length * providerRate;
+  const thisWeekEarnings = completedThisWeek.length * providerRate;
+
+  const pendingAmount = pendingRequests * providerRate;
+
+  const avgRating = recentReviews.length
+    ? (recentReviews.reduce((sum, review) => sum + review.rating, 0) / recentReviews.length).toFixed(1)
+    : '0.0';
 
   const stats = [
     { label: 'Total Bookings',     value: totalBookings.toString(),   change: '+8%',  trend: 'up',   icon: CalendarDays, accent: 'blue'   },
@@ -245,15 +284,14 @@ export default function ProviderDashboardPage() {
     { label: 'Pending Requests',   value: pendingRequests.toString(), change: '-2',   trend: 'down', icon: Clock,        accent: 'orange' },
   ];
 
-  // Format upcoming bookings
+  // Format upcoming bookings (including completed ones)
   const upcomingBookings = [...data.bookings]
-    .filter((b: any) => b.status === 'confirmed' || b.status === 'pending' || b.status === 'in-progress')
-    .sort((a: any, b: any) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime())
+    .sort((a: any, b: any) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime())
     .slice(0, 4)
     .map((b: any) => ({
       id: b._id.substring(b._id.length - 6).toUpperCase(),
-      customer: b.customer_id?.user_name || b.customer_id?.name || 'Unknown',
-      service: b.service_id?.service_name || b.service_provider_id?.service_id?.service_name || 'Booked Service',
+      customer: b.customer?.user_name || b.customer?.name || 'Unknown',
+      service: b.service?.service_name || 'Booked Service',
       time: `${new Date(b.scheduled_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${b.scheduled_time}`,
       status: b.status,
     }));
@@ -264,16 +302,16 @@ export default function ProviderDashboardPage() {
       <div className="pv-earnings-strip">
         <div className="pv-earnings-main">
           <p className="pv-earnings-label">Total Earnings This Month</p>
-          <p className="pv-earnings-value">₹28,450</p>
-          <p className="pv-earnings-period">April 2026 · {completedJobs} jobs completed</p>
+          <p className="pv-earnings-value">{providerRate > 0 ? `₹${totalEarningsThisMonth.toLocaleString('en-IN')}` : '₹0'}</p>
+          <p className="pv-earnings-period">{now.toLocaleString('default', { month: 'long', year: 'numeric' })} · {completedJobs} jobs completed</p>
         </div>
         <div className="pv-earnings-breakdown">
           <div className="pv-earn-item">
-            <p className="pv-earn-item-value">₹6,200</p>
+            <p className="pv-earn-item-value">{providerRate > 0 ? `₹${thisWeekEarnings.toLocaleString('en-IN')}` : '₹0'}</p>
             <p className="pv-earn-item-label">This Week</p>
           </div>
           <div className="pv-earn-item">
-            <p className="pv-earn-item-value">₹1,800</p>
+            <p className="pv-earn-item-value">{providerRate > 0 ? `₹${pendingAmount.toLocaleString('en-IN')}` : '₹0'}</p>
             <p className="pv-earn-item-label">Pending</p>
           </div>
           <div className="pv-earn-item">

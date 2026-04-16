@@ -59,7 +59,7 @@ class ServiceProviderController {
             existingServiceProvider.profile_img = profile_img;
             existingServiceProvider.profile_img_url = profile_img_url;
             existingServiceProvider.experience = experience;
-            existingServiceProvider.charges_per_hour = charges_per_hour;
+            existingServiceProvider.charges_per_hour = Number(charges_per_hour);
 
             const updatedProvider = await existingServiceProvider.save();
 
@@ -103,7 +103,12 @@ class ServiceProviderController {
             }
 
             let serviceProviderObj = {
-                service_id, service_area_zip, experience, charges_per_hour, isProfileCompleted: true, status: 'pending'
+                service_id, 
+                service_area_zip, 
+                experience, 
+                charges_per_hour: Number(charges_per_hour), 
+                isProfileCompleted: true, 
+                status: 'pending'
             };
 
             if (req.file) {
@@ -211,7 +216,9 @@ class ServiceProviderController {
                     },
                     {
                         $match: {
-                            status: "approved"
+                            status: "approved",
+                            isProfileCompleted: true,
+                            isAvailable: true
                         }
                     },
                     {
