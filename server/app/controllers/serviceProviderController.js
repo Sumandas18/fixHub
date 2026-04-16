@@ -201,8 +201,9 @@ class ServiceProviderController {
                     .find({ provider_id })
                     .populate('service_id') || [];
             } else if (service_id) {
+                // For users requesting providers by service, only show approved providers with completed profiles
                 fetchServiceProvider = await serviceProviderModel
-                    .find({ service_id })
+                    .find({ service_id, status: "approved", isProfileCompleted: true })
                     .populate('service_id') || [];
             }
 
