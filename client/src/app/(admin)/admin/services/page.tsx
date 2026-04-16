@@ -62,6 +62,9 @@ export default function AdminServicesPage() {
   /* seeding state */
   const [seeding, setSeeding] = useState(false);
   const [seedProgress, setSeedProgress] = useState(0);
+  const editFileRef = useRef<HTMLInputElement>(null);
+  const [editImgFile, setEditImgFile] = useState<File | null>(null);
+  const [editImgPreview, setEditImgPreview] = useState<string | null>(null);
 
   /* toggling */
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -156,28 +159,41 @@ export default function AdminServicesPage() {
     setEditService(s);
     setEditName(s.service_name);
     setEditDesc(s.service_description);
+    setEditImgFile(null);
+    setEditImgPreview(s.service_image_url || null);
+  };
+
+  const handleEditFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+
+    if (f.size > 3 * 1024 * 1024) {
+      toast.error('Image must be under 3 MB');
+      return;
+    }
+
+    setEditImgFile(f);
+    setEditImgPreview(URL.createObjectURL(f));
   };
 
   /* ── edit submit ── */
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editService) return;
-    if (!editName.trim() || !editDesc.trim()) { toast.error('Name and description are required'); return; }
+
     setEditSubmitting(true);
     try {
-      await adminApi.updateService(editService._id, {
-        service_name: editName.trim(),
-        service_description: editDesc.trim(),
-      });
-      setServices(prev =>
-        prev.map(s => s._id === editService._id
-          ? { ...s, service_name: editName.trim(), service_description: editDesc.trim() }
-          : s
-        )
-      );
+      
+      const fd = new FormData();
+      fd.append('service_name', editName.trim());
+      fd.append('service_description', editDesc.trim());
+      if (editImgFile) fd.append('service-img', editImgFile);
+
+      const res = await adminApi.updateService(editService._id, fd);
+
       toast.success('Service updated successfully!');
       setEditService(null);
-    } catch (err: any) {
+    } catch (err: any) { 
       toast.error(err.response?.data?.message || 'Failed to update service');
     } finally {
       setEditSubmitting(false);
@@ -382,7 +398,7 @@ export default function AdminServicesPage() {
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 7, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Service Image <span style={{ color: '#4a5568', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
-                    <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={handleFilePick} />
+                    <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/jpg" hidden onChange={handleFilePick} />
                     <div onClick={() => fileRef.current?.click()} style={{ border: '2px dashed rgba(235,94,40,0.3)', borderRadius: 12, padding: '16px', textAlign: 'center', cursor: 'pointer', background: 'rgba(235,94,40,0.03)' }}>
                       {imgPreview ? <img src={imgPreview} alt="preview" style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', margin: '0 auto', display: 'block' }} /> : (
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
@@ -426,8 +442,44 @@ export default function AdminServicesPage() {
                   <X size={15} />
                 </button>
               </div>
+
               <form onSubmit={handleEditSubmit}>
-                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 1, textTransform: 'uppercase', letterSpacing: '0.6px'}}>
+                    Service Image
+                  </label>
+
+                  <input 
+                    ref={editFileRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg"
+                    hidden
+                    onChange={handleEditFilePick}
+                  />
+
+                  <div
+                    onClick={() => editFileRef.current?.click()}
+                    style={{
+                      border: '2px dashed rgba(59,130,246,0.3)',
+                      borderRadius: 12,
+                      padding: 16,
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      background: 'rgba(59,130,246,0.03)',
+                    }}
+                  >
+                    {editImgPreview ? (
+                      <img
+                        src={editImgPreview}
+                        alt="preview"
+                        style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <p style={{ fontSize: 12, color: '#64748b' }}>
+                        Click to upload image
+                      </p>
+                    )}
+                  </div>
                   <div>
                     <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 7, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Service Name *</label>
                     <input type="text" required value={editName} onChange={e => setEditName(e.target.value)} style={fieldStyle} onFocus={e => e.target.style.borderColor = 'rgba(59,130,246,0.5)'} onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
@@ -440,7 +492,7 @@ export default function AdminServicesPage() {
                 <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                   <button type="button" onClick={() => setEditService(null)} className="btn btn-secondary" style={{ fontFamily: 'inherit' }}>Cancel</button>
                   <button type="submit" disabled={editSubmitting} className="btn btn-primary" style={{ fontFamily: 'inherit', minWidth: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, opacity: editSubmitting ? 0.7 : 1, background: 'linear-gradient(135deg,#3b82f6,#7c3aed)' }}>
-                    {editSubmitting ? <><Loader2 size={14} className="al-spin" /> Saving…</> : <><Pencil size={14} /> Save Changes</>}
+                    {editSubmitting ? <><Loader2 size={14} className="al-spin" /> Updating…</> : <><Pencil size={14} /> Update Changes</>}
                   </button>
                 </div>
               </form>

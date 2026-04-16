@@ -50,8 +50,10 @@ export const adminApi = {
   },
 
   /** Update service name / description */
-  updateService: async (id: string, data: { service_name: string; service_description: string }) => {
-    const res = await apiClient.patch(`/service/${id}`, data);
+  updateService: async (id: string, data: FormData) => {
+    const res = await apiClient.put(`/service/update/${id}`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return res.data;
   },
 

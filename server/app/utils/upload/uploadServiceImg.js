@@ -17,7 +17,7 @@ const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'fixhub/service',
-        format: async (req, file) => 'pdf',
+        allowedFormats: ["jpg", "jpeg", "png"],
         public_id: (req, file) => 'fixhub-service_' + file.originalname.split(" ").join("-") + Date.now()
     },
 });

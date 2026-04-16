@@ -34,7 +34,7 @@ class ServiceController {
         service_image = req.file.filename;
         service_image_url = req.file.path;
 
-        serviceObj = { ...serviceObj, service_image, service_image_url }
+        serviceObj = new serviceModel({ service_name, service_description, service_image, service_image_url })
       }
 
       const service = await serviceObj.save();
@@ -99,12 +99,12 @@ class ServiceController {
 
   async updateService(req, res) {
     try {
+
       let service_image, service_image_url, serviceObj = req.body;
       const serviceId = req.params.id;
-
       if (!serviceId) {
         return res.status(StatusCode.NOT_FOUND).json({
-          success: false,
+          success: false, 
           message: "Service ID is required"
         })
       }
@@ -112,7 +112,7 @@ class ServiceController {
       const { data, error } = checkUpdateServiceValidate.validate(serviceObj);
       if (error) {
         return res.status(StatusCode.BAD_REQUEST).json({
-          success: false,
+          success: false, 
           message: error.details.map(err => err.message)
         });
       }
@@ -120,25 +120,27 @@ class ServiceController {
       const service = await serviceModel.findById(serviceId);
 
       if (req.file) {
+        console.log('file')
         await cloudinary.uploader.destroy(service.service_image);
 
         service_image = req.file.filename;
         service_image_url = req.file.path;
 
         serviceObj = { ...serviceObj, service_image, service_image_url };
+
       }
 
       const updateService = await serviceModel.findByIdAndUpdate(serviceId, serviceObj, { new: true });
 
       return res.status(StatusCode.SUCCESS).json({
-        success: true,
+        success: true, 
         message: "Service updated successfully"
       });
+
     }
-    catch (error) {
+    catch (error) { 
       return res.status(StatusCode.SERVER_ERROR).json({
-        success: false,
-        message: error.message,
+        success: false, message: error.message,
       });
     }
   }
