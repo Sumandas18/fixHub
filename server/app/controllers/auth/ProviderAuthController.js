@@ -168,7 +168,7 @@ class ProviderAuthController {
                 user_contact: user.user_contact
             };
 
-            const access_token = jwt.sign(tokenPayload, process.env.ACCESS_TOKEN_SECRET_KEY, { expiresIn: '1h' });
+            const access_token = jwt.sign(tokenPayload, process.env.ACCESS_TOKEN_SECRET_KEY, { expiresIn: '1d' });
             const refresh_token = jwt.sign(tokenPayload, process.env.REFRESH_TOKEN_SECRET_KEY, { expiresIn: '7d' });
 
             const hashedToken = await bcrypt.hash(refresh_token, 10);

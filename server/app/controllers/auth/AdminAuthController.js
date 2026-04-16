@@ -129,7 +129,7 @@ class AdminAuthController {
                             user_name: existAdmin.user_name,
                             user_email: existAdmin.user_email,
                             user_role: existAdmin.user_role
-                        }, process.env.ACCESS_TOKEN_SECRET_KEY, { expiresIn: '1h' });
+                        }, process.env.ACCESS_TOKEN_SECRET_KEY, { expiresIn: '1d' });
 
                         const refresh_token = jwt.sign({
                             user_id: existAdmin._id,
