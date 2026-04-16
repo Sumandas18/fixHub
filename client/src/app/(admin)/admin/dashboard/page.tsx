@@ -42,7 +42,8 @@ export default function AdminDashboardPage() {
     ratings: [] as any[],
   });
   const [loading, setLoading] = useState(true);
-  
+  const [status, setStatus] = useState(null);
+
   // Provider Approval Modal State
   const [approvalModal, setApprovalModal] = useState<any>(null);
   const [approvalLoading, setApprovalLoading] = useState(false);
@@ -83,6 +84,7 @@ export default function AdminDashboardPage() {
   }, []);
 
   const handleApproveReject = async (id: string, status: 'approve' | 'reject') => {
+    setStatus(status);
     setApprovalLoading(true);
     try {
       await adminApi.approveProvider(id, status);
@@ -112,21 +114,21 @@ export default function AdminDashboardPage() {
       : '—';
 
   const stats = [
-    { label: 'Total Customers', value: data.customers.length.toString(), change: '+12%', trend: 'up',   icon: Users,       accent: 'blue'   },
-    { label: 'Total Providers', value: data.providers.length.toString(), change: '+5%',  trend: 'up',   icon: UserCheck,   accent: 'green'  },
-    { label: 'Total Bookings',  value: data.bookings.length.toString(),  change: '+18%', trend: 'up',   icon: CalendarDays,accent: 'orange' },
-    { label: 'Avg Rating',      value: avgRating,                        change: 'live', trend: 'up',   icon: Star,        accent: 'purple' },
+    { label: 'Total Customers', value: data.customers.length.toString(), change: '+12%', trend: 'up', icon: Users, accent: 'blue' },
+    { label: 'Total Providers', value: data.providers.length.toString(), change: '+5%', trend: 'up', icon: UserCheck, accent: 'green' },
+    { label: 'Total Bookings', value: data.bookings.length.toString(), change: '+18%', trend: 'up', icon: CalendarDays, accent: 'orange' },
+    { label: 'Avg Rating', value: avgRating, change: 'live', trend: 'up', icon: Star, accent: 'purple' },
   ];
 
   const recentBookings = [...data.bookings]
     .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5)
     .map((b: any) => ({
-      id:       b._id.slice(-6).toUpperCase(),
+      id: b._id.slice(-6).toUpperCase(),
       customer: b.customer_id?.user_name || b.customer_id?.name || 'Unknown',
-      service:  b.service_provider_id?.service_id?.service_name || b.service_id?.service_name || 'Service',
-      status:   b.status,
-      date:     new Date(b.scheduled_date || b.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      service: b.service_provider_id?.service_id?.service_name || b.service_id?.service_name || 'Service',
+      status: b.status,
+      date: new Date(b.scheduled_date || b.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     }));
 
   const recentActivity = [
@@ -141,16 +143,16 @@ export default function AdminDashboardPage() {
     .slice(0, 4)
     .map((sp: any) => ({
       ...sp,
-      name:    sp.provider?.user_name || sp.provider_id?.name || 'Unknown Provider',
-      email:   sp.provider?.user_email || 'No email',
+      name: sp.provider?.user_name || sp.provider_id?.name || 'Unknown Provider',
+      email: sp.provider?.user_email || 'No email',
       doc_url: sp.provider?.doc_url,
       service: sp.service?.service_name || 'Unknown Service',
-      date:    new Date(sp.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      id:      sp.provider_id,
+      date: new Date(sp.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      id: sp.provider_id,
     }));
 
-    // console.log(data.serviceProviders);
-    
+  // console.log(data.serviceProviders);
+
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
       {/* Page Header */}
@@ -238,7 +240,7 @@ export default function AdminDashboardPage() {
 
         {/* Right Column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
+
           {/* Pending Provider Approvals - STEP 5 & 6 */}
           <motion.div variants={fadeUpVariant} className="data-card" style={{ border: '1px solid rgba(235, 94, 40, 0.2)' }}>
             <div className="data-card-header">
@@ -270,7 +272,7 @@ export default function AdminDashboardPage() {
                       <p style={{ fontSize: 11, color: '#94a3b8' }}>{p.email}</p>
                     </div>
                   </div>
-                  
+
                   {/* Bubble Animated Approve Button */}
                   <motion.button
                     whileHover={{ scale: 1.05, boxShadow: '0 4px 15px rgba(235,94,40,0.3)' }}
@@ -375,37 +377,37 @@ export default function AdminDashboardPage() {
 
                 {/* ID Document */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                   <p style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9' }}>Uploaded Legal ID / Proof Document</p>
-                   {(() => {
-                     const url = mediaUrl(approvalModal.doc_url);
-                     if (!url) return <p style={{ fontSize: 13, color: '#ef4444' }}>No document uploaded</p>;
-                     const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
-                     return isImage ? (
-                       <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
-                         <img src={url} alt="Provider document" style={{ width: '100%', maxHeight: 280, objectFit: 'cover', display: 'block' }} />
-                         <a href={url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', background: 'rgba(59,130,246,0.1)', color: '#60a5fa', fontSize: 12, textDecoration: 'none' }}>
-                           <ExternalLink size={13} /> Open full image
-                         </a>
-                       </div>
-                     ) : (
-                       <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
-                         <iframe src={url} title="Provider document" style={{ width: '100%', height: 260, border: 'none', background: '#fff' }} />
-                         <a href={url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', background: 'rgba(59,130,246,0.1)', color: '#60a5fa', fontSize: 12, textDecoration: 'none' }}>
-                           <FileText size={13} /> Open in new tab
-                         </a>
-                       </div>
-                     );
-                   })()}
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9' }}>Uploaded Legal ID / Proof Document</p>
+                  {(() => {
+                    const url = mediaUrl(approvalModal.doc_url);
+                    if (!url) return <p style={{ fontSize: 13, color: '#ef4444' }}>No document uploaded</p>;
+                    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+                    return isImage ? (
+                      <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <img src={url} alt="Provider document" style={{ width: '100%', maxHeight: 280, objectFit: 'cover', display: 'block' }} />
+                        <a href={url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', background: 'rgba(59,130,246,0.1)', color: '#60a5fa', fontSize: 12, textDecoration: 'none' }}>
+                          <ExternalLink size={13} /> Open full image
+                        </a>
+                      </div>
+                    ) : (
+                      <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <iframe src={url} title="Provider document" style={{ width: '100%', height: 260, border: 'none', background: '#fff' }} />
+                        <a href={url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', background: 'rgba(59,130,246,0.1)', color: '#60a5fa', fontSize: 12, textDecoration: 'none' }}>
+                          <FileText size={13} /> Open in new tab
+                        </a>
+                      </div>
+                    );
+                  })()}
                 </div>
 
               </div>
 
               <div style={{ padding: '20px 24px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
                 <button type="button" onClick={() => handleApproveReject(approvalModal.id, 'reject')} disabled={approvalLoading} className="pv-btn pv-btn-danger">
-                  {approvalLoading ? <Loader2 className="al-spin" size={16} /> : '✗ Reject'}
+                  {(approvalLoading && status == 'reject') ? <Loader2 className="al-spin" size={16} /> : '✗ Reject'}
                 </button>
                 <button type="button" onClick={() => handleApproveReject(approvalModal.id, 'approve')} disabled={approvalLoading} className="pv-btn pv-btn-success" style={{ background: '#22c55e', color: '#fff' }}>
-                  {approvalLoading ? <Loader2 className="al-spin" size={16} /> : '✓ Accept'}
+                  {(approvalLoading && status == 'approve') ? <Loader2 className="al-spin" size={16} /> : '✓ Accept'}
                 </button>
               </div>
             </motion.div>

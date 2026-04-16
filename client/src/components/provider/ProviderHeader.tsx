@@ -1,8 +1,12 @@
 'use client';
 
+import { useAuthStore } from '@/store/useAuthStore';
 import { Bell, Search } from 'lucide-react';
 
 export default function ProviderHeader() {
+
+    const { user, logout } = useAuthStore();
+  
   return (
     <header className="pv-header">
       <div
@@ -58,10 +62,10 @@ export default function ProviderHeader() {
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div className="pv-avatar" style={{ width: 36, height: 36, fontSize: 14 }}>K</div>
+          <div className="pv-avatar" style={{ width: 36, height: 36, fontSize: 14 }}>{user.user_name.charAt(0)}</div>
           <div>
-            <p style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9', lineHeight: 1.3 }}>Kiran Singh</p>
-            <p style={{ fontSize: 11, color: '#4a5568' }}>kiran@fixhub.com</p>
+            <p style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9', lineHeight: 1.3 }}>{user.user_name}</p>
+            <p style={{ fontSize: 11, color: '#4a5568' }}>{user.user_email}</p>
           </div>
         </div>
       </div>

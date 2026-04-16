@@ -24,15 +24,15 @@ interface Service {
 
 /* ── 9 default services (seeded when DB is empty) ── */
 const DEFAULT_SERVICES: { name: string; description: string }[] = [
-  { name: 'Home Appliance Repair',       description: 'Professional repair of washing machines, dishwashers, dryers, ovens and all major home appliances.' },
-  { name: 'Electrical Services',         description: 'Safe and reliable electrical installations, wiring, panel upgrades, and fault diagnosis by certified electricians.' },
-  { name: 'Plumbing Services',           description: 'Expert plumbing for leaks, pipe fitting, drain cleaning, water heater installation and bathroom fixtures.' },
-  { name: 'Home Cleaning Services',      description: 'Deep cleaning, regular housekeeping, carpet cleaning and sanitisation for a spotless and hygienic home.' },
+  { name: 'Home Appliance Repair', description: 'Professional repair of washing machines, dishwashers, dryers, ovens and all major home appliances.' },
+  { name: 'Electrical Services', description: 'Safe and reliable electrical installations, wiring, panel upgrades, and fault diagnosis by certified electricians.' },
+  { name: 'Plumbing Services', description: 'Expert plumbing for leaks, pipe fitting, drain cleaning, water heater installation and bathroom fixtures.' },
+  { name: 'Home Cleaning Services', description: 'Deep cleaning, regular housekeeping, carpet cleaning and sanitisation for a spotless and hygienic home.' },
   { name: 'Home Maintenance & Handyman', description: 'General repairs, furniture assembly, door & window fixing and all-round home maintenance tasks.' },
-  { name: 'Bike & Car Services',         description: 'Doorstep servicing, oil changes, tyre fitting and diagnostics for bikes and cars.' },
-  { name: 'AC & Refrigerator Repair',    description: 'Installation, gas refilling, deep cleaning and repair services for air conditioners and refrigerators.' },
-  { name: 'Painting & Renovation',       description: 'Interior and exterior painting, wall texturing, waterproofing and full home renovation solutions.' },
-  { name: 'Pest Control Services',       description: 'Safe and effective termite, rodent, cockroach and mosquito control treatments for your home or office.' },
+  { name: 'Bike & Car Services', description: 'Doorstep servicing, oil changes, tyre fitting and diagnostics for bikes and cars.' },
+  { name: 'AC & Refrigerator Repair', description: 'Installation, gas refilling, deep cleaning and repair services for air conditioners and refrigerators.' },
+  { name: 'Painting & Renovation', description: 'Interior and exterior painting, wall texturing, waterproofing and full home renovation solutions.' },
+  { name: 'Pest Control Services', description: 'Safe and effective termite, rodent, cockroach and mosquito control treatments for your home or office.' },
 ];
 
 /* ────────────────────────────────────────────── */
@@ -42,25 +42,25 @@ export default function AdminServicesPage() {
 
   /* list state */
   const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [search, setSearch]     = useState('');
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   /* add modal state */
-  const [addOpen, setAddOpen]         = useState(false);
-  const [submitting, setSubmitting]   = useState(false);
-  const [name, setName]               = useState('');
-  const [desc, setDesc]               = useState('');
-  const [imgFile, setImgFile]         = useState<File | null>(null);
-  const [imgPreview, setImgPreview]   = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [name, setName] = useState('');
+  const [desc, setDesc] = useState('');
+  const [imgFile, setImgFile] = useState<File | null>(null);
+  const [imgPreview, setImgPreview] = useState<string | null>(null);
 
   /* edit modal state */
-  const [editService, setEditService]   = useState<Service | null>(null);
-  const [editName, setEditName]         = useState('');
-  const [editDesc, setEditDesc]         = useState('');
+  const [editService, setEditService] = useState<Service | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDesc, setEditDesc] = useState('');
   const [editSubmitting, setEditSubmitting] = useState(false);
 
   /* seeding state */
-  const [seeding, setSeeding]           = useState(false);
+  const [seeding, setSeeding] = useState(false);
   const [seedProgress, setSeedProgress] = useState(0);
 
   /* toggling */
@@ -106,7 +106,7 @@ export default function AdminServicesPage() {
     fetchServices().then(data => {
       if (data.length === 0) seedDefaults();
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filtered = services.filter(s =>

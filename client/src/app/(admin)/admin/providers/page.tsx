@@ -30,6 +30,8 @@ export default function AdminProvidersPage() {
     load();
   }, []);
 
+  console.log(providers);
+
   /* ── Approve / Reject ── */
   const handleApprove = async (id: string, action: 'approve' | 'reject') => {
     setActionLoading(id + action);
@@ -104,7 +106,7 @@ export default function AdminProvidersPage() {
                 <th>Contact</th>
                 <th>Experience</th>
                 <th>Approval</th>
-                <th>Account</th>
+                <th>Status</th>
                 <th>Document</th>
                 <th>Actions</th>
               </tr>
@@ -128,7 +130,7 @@ export default function AdminProvidersPage() {
                   </td>
                   <td style={{ color: '#94a3b8' }}>{p.user_email || '—'}</td>
                   <td style={{ color: '#94a3b8' }}>{p.user_contact || '—'}</td>
-                  <td style={{ color: '#94a3b8' }}>{p.service?.experience || '—'}</td>
+                  <td style={{ color: '#94a3b8' }}>{p.service?.experience || '—'} yr.</td>
 
                   {/* Approval Status */}
                   <td>
@@ -200,7 +202,12 @@ export default function AdminProvidersPage() {
                           </button>
                         </>
                       )}
-
+                      <button
+                        className={`btn btn-sm btn-primary`}
+                        // onClick={() => handleBlockUnblock(p._id, p.isBlocked)}
+                      >
+                       Details
+                      </button>
                     </div>
                   </td>
                 </tr>
