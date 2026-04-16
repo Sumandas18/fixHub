@@ -45,31 +45,9 @@ export default function ProviderDashboardPage() {
   useEffect(() => {
     let cancelled = false;
 
-    const initGuards = async () => {
+    const loadData = async () => {
       try {
-        const { authApi } = await import('@/services/api/auth');
-        const freshRes = await authApi.getProfile();
-        if (cancelled) return;
-
-        const freshUser = freshRes.data || freshRes;
-        if (!freshUser) return;
-
-        // Role guard
-        if (freshUser.user_role !== 'provider') {
-          router.replace('/');
-          return;
-        }
-
-        // Not approved → send to pending ONLY once (no re-trigger)
-        if (freshUser.providerStatus !== 'approved') {
-          router.replace('/provider/pending');
-          return;
-        }
-
-        // Update store with fresh approved user
-        useAuthStore.setState({ user: freshUser });
-
-        // Fetch Bookings exclusively for approved providers
+        // Dashboard NEVER redirects — just loads data
         const bookingsData = await providerApi.getBookings();
         if (!cancelled) setData({ bookings: bookingsData.data || [] });
 
@@ -83,7 +61,7 @@ export default function ProviderDashboardPage() {
       }
     };
 
-    initGuards();
+    loadData();
     return () => { cancelled = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

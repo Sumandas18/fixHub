@@ -104,39 +104,37 @@ class UserController {
                 })
             }
             
-            const checkOTP = await otpModel.findOne({ userId: user._id }).sort({ createdAt: -1 });
+            const checkOTP = await otpModel
+              .findOne({ userId: user._id })
+              .sort({ createdAt: -1 });
 
-            if (!checkOTP) {
-                return res.status(StatusCode.BAD_REQUEST).json({
-                    success: false,
-                    message: "OTP not found or has expired"
-                })
+            // ADD DEBUG LOG (must)
+            console.log("DB OTP:", checkOTP?.otp);
+            console.log("USER OTP:", otp);
+            console.log("CreatedAt:", checkOTP?.createdAt);
+            console.log("Now:", new Date());
+
+            // FIX OTP comparison (type-safe)
+            if (!checkOTP || String(checkOTP.otp) !== String(otp)) {
+              return res.status(StatusCode.BAD_REQUEST).json({
+                success: false,
+                message: "Invalid OTP"
+              });
             }
 
-            console.log(`[TEMP OTP DEBUG] User: ${userId}`);
-            console.log(`[TEMP OTP DEBUG] DB OTP: ${checkOTP.otp} | Type: ${typeof checkOTP.otp}`);
-            console.log(`[TEMP OTP DEBUG] Request OTP: ${otp} | Type: ${typeof otp}`);
-            
-            if (String(checkOTP.otp) !== String(otp)) {
-                return res.status(StatusCode.BAD_REQUEST).json({
-                    success: false,
-                    message: "Invalid OTP"
-                })
-            }
-
-            // Strict manual 5 min check
+            // FIX expiration logic
             const now = Date.now();
-            const otpTime = new Date(checkOTP.createdAt).getTime();
-            const diffMs = now - otpTime;
+            const created = new Date(checkOTP.createdAt).getTime();
+            const diff = now - created;
 
-            console.log(`[TEMP OTP DEBUG] CreatedAt: ${otpTime} | Now: ${now} | Diff(ms): ${diffMs}`);
+            console.log("Time diff(ms):", diff);
 
-            if (diffMs > 300000) { // 5 minutes (5 * 60 * 1000)
-                await otpModel.deleteMany({ userId: user._id });
-                return res.status(StatusCode.BAD_REQUEST).json({
-                    success: false,
-                    message: "OTP has expired. Please request a new one."
-                })
+            // SET expiry = 5 minutes
+            if (diff > 5 * 60 * 1000) {
+              return res.status(StatusCode.BAD_REQUEST).json({
+                success: false,
+                message: "OTP expired"
+              });
             }
             
             user.isVerified = true;

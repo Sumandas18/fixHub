@@ -187,7 +187,8 @@ class ProviderController {
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,
-        message: `Provider ${status} successfully`
+        message: `Provider ${status} successfully`,
+        providerStatus: status
       });
 
     } catch (error) {

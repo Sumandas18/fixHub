@@ -2,10 +2,9 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Clock, Loader2, Upload, X, ShieldAlert } from 'lucide-react';
+import { Clock, Loader2, Upload, X, ShieldAlert, CheckCircle } from 'lucide-react';
 import { providerApi } from '@/services/api/provider';
 import { adminApi } from '@/services/api/admin';
-import { authApi } from '@/services/api/auth';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,7 +18,6 @@ const fadeVariant = {
 export default function ProviderPendingPage() {
   const { user } = useAuthStore();
   const router = useRouter();
-  const fetchedRef = useRef(false);
 
   const [loading, setLoading] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -36,40 +34,38 @@ export default function ProviderPendingPage() {
   const [profileImgPreview, setProfileImgPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Fetch fresh profile from backend on mount to get latest providerStatus
   useEffect(() => {
-    let cancelled = false;
-    const initData = async () => {
+    const fetchProfile = async () => {
       try {
-        const freshUserRes = await authApi.getProfile();
-        if (cancelled) return;
-        const freshUser = freshUserRes.data || freshUserRes;
-        
-        if (!freshUser) return;
-
-        // Non-provider role → kick to home
-        if (freshUser.user_role !== 'provider') {
-          router.replace('/');
-          return;
+        const { authApi } = await import('@/services/api/auth');
+        const res = await authApi.getProfile();
+        if (res?.data) {
+          // Push fresh DB data into the store — replaces stale cached state
+          useAuthStore.setState({ user: res.data });
         }
-
-        // Already approved: redirect without loop (only if not already on dashboard)
-        if (freshUser.providerStatus === 'approved') {
-          router.replace('/provider/dashboard');
-          return;
-        }
-
-        // Update store with fresh data
-        useAuthStore.setState({ user: freshUser });
-
-        const servicesData = await adminApi.getServices();
-        if (!cancelled) setServicesList(servicesData.data || []);
       } catch (err) {
-        console.error('Failed to grab data', err);
+        console.error('Failed to fetch profile', err);
       }
     };
-    initData();
+
+    let cancelled = false;
+    fetchProfile();
+
+    // Load services for the profile form
+    adminApi.getServices()
+      .then((res: any) => { if (!cancelled) setServicesList(res.data || []); })
+      .catch(console.error);
+
     return () => { cancelled = true; };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!user) return null;
+
+  const handleAuthorized = () => {
+    console.log("BUTTON CLICKED");
+    router.push('/provider/dashboard');
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -131,6 +127,9 @@ export default function ProviderPendingPage() {
           backdropFilter: 'blur(16px)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', zIndex: 10
         }}
       >
+        {/* DEBUG: remove after testing */}
+        {console.log("STATUS:", (user as any)?.providerStatus) as any}
+
         {isProfileIncomplete ? (
            <>
              <ShieldAlert size={56} color="#a855f7" style={{ marginBottom: 20, marginLeft: 'auto', marginRight: 'auto' }} />
@@ -151,12 +150,40 @@ export default function ProviderPendingPage() {
                  border: 'none',
                  borderRadius: 50, color: '#fff', fontSize: '1.1rem', fontWeight: 600, cursor: 'pointer',
                  boxShadow: '0 0 24px rgba(168,85,247,0.5)',
-                 animation: 'glowPulse 2s infinite alternate',
                  width: '100%',
                  display: 'flex', alignItems: 'center', justifyContent: 'center'
                }}
              >
                Complete Profile to Get Approved
+             </motion.button>
+           </>
+        ) : (user as any).providerStatus === 'approved' ? (
+           <>
+             <CheckCircle size={56} color="#22c55e" style={{ marginBottom: 20, marginLeft: 'auto', marginRight: 'auto' }} />
+             <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 16, background: 'linear-gradient(90deg, #22c55e, #16a34a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+               You Are Authorized!
+             </h1>
+             <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.6, marginBottom: 32 }}>
+               Your account has been approved by admin. Click below to go to your dashboard.
+             </p>
+             <motion.button
+               whileHover={{ scale: 1.05 }}
+               whileTap={{ scale: 0.95 }}
+               onClick={() => {
+                 console.log("CLICKED");
+                 handleAuthorized();
+               }}
+               style={{
+                 padding: '0.9rem 2rem',
+                 background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                 border: 'none',
+                 borderRadius: 50, color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer',
+                 boxShadow: '0 0 24px rgba(34,197,94,0.5)',
+                 width: '100%',
+                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+               }}
+             >
+               ✓ Go to Dashboard
              </motion.button>
            </>
         ) : (
