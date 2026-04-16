@@ -7,8 +7,8 @@ import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { scaleUpVariant } from '@/lib/animations';
 
-const STATUS_OPTIONS = ['confirmed', 'in-progress', 'cancelled'];
-const TABS = ['All', 'Pending', 'Accepted', 'Confirmed', 'In-Progress', 'Completed', 'Cancelled'];
+const STATUS_OPTIONS = ['accepted', 'in-progress', 'rejected'];
+const TABS = ['All', 'Pending', 'Accepted', 'Completed', 'Rejected'];
 
 type Booking = any;
 
@@ -107,14 +107,8 @@ export default function ProviderBookingsPage() {
     if (!rejectModal) return;
     setActionLoading(true);
     try {
-      // using PUT /booking/status for cancellation to include reason, or PATCH.
-      // The API patchBookingStatus from BookingController does not take reason,
-      // but updateBookingStatus allows 'cancelled' with reason.
-      // However, frontend originally used patch for 'rejected'.
-      // Let's use PUT /booking/status to send reason for 'cancelled' or just stick to patch and ignore reason locally.
-      // Wait, let's use PUT /booking/status/:id with {status: "cancelled", reason: rejectReason}
-      await api.put(`/booking/status/${rejectModal._id}`, { status: 'cancelled', reason: rejectReason });
-      setBookings((prev) => prev.map((b) => b._id === rejectModal._id ? { ...b, status: 'cancelled' } : b));
+      await api.patch(`/booking/${rejectModal._id}`, { status: 'rejected', reason: rejectReason });
+      setBookings((prev) => prev.map((b) => b._id === rejectModal._id ? { ...b, status: 'rejected' } : b));
       toast.success('Booking rejected');
       setRejectModal(null);
     } catch {
@@ -267,22 +261,14 @@ export default function ProviderBookingsPage() {
                         </>
                       ) : (
                         <>
-                          <button
-                            className="pv-btn pv-btn-ghost pv-btn-sm"
-                            onClick={() => openStatusModal(b)}
-                            disabled={b.status === 'completed' || b.status === 'cancelled' || b.status === 'rejected'}
-                          >
-                            <ChevronDown size={13} /> Status
-                          </button>
-                          
                           {/* Specific Complete Action */}
-                          {(b.status === 'confirmed' || b.status === 'accepted' || b.status === 'in-progress') && (
+                          {b.status === 'accepted' && (
                             <button
                               className="pv-btn pv-btn-otp pv-btn-sm"
                               onClick={() => handleMarkComplete(b)}
                               disabled={actionLoading}
                             >
-                              <ShieldCheck size={13} /> Mark Complete
+                              <ShieldCheck size={13} /> Complete
                             </button>
                           )}
                         </>

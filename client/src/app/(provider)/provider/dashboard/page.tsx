@@ -43,45 +43,49 @@ export default function ProviderDashboardPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-  console.log('AUTH STORE USER UPDATED:', user);
-}, [user]);
+    let cancelled = false;
 
-  // ONE-SHOT redirect guard: non-approved providers → /provider/pending
-  useEffect(() => {
-    if (!user || redirectedRef.current) return;
-    const status = (user as any).providerStatus;
-    const profileDone = (user as any).isProfileCompleted;
-    // console.log('status',status)
-    // Only approved providers may use the dashboard
-    if (status !== 'approved') {
-      redirectedRef.current = true;
-      router.replace('/provider/pending');
-    }
-  }, [user, router]);
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
+    const initGuards = async () => {
       try {
+        const { authApi } = await import('@/services/api/auth');
+        const freshRes = await authApi.getProfile();
+        if (cancelled) return;
+
+        const freshUser = freshRes.data || freshRes;
+        if (!freshUser) return;
+
+        // Role guard
+        if (freshUser.user_role !== 'provider') {
+          router.replace('/');
+          return;
+        }
+
+        // Not approved → send to pending ONLY once (no re-trigger)
+        if (freshUser.providerStatus !== 'approved') {
+          router.replace('/provider/pending');
+          return;
+        }
+
+        // Update store with fresh approved user
+        useAuthStore.setState({ user: freshUser });
+
+        // Fetch Bookings exclusively for approved providers
         const bookingsData = await providerApi.getBookings();
-        setData({
-          bookings: bookingsData.data || [],
-        });
-        
-        // Fetch services globally for either the dashboard or the onboarding modal
+        if (!cancelled) setData({ bookings: bookingsData.data || [] });
+
         const servicesData = await adminApi.getServices();
-        setServicesList(servicesData.data || []);
-      } catch {
-        toast.error('Failed to load dashboard data');
+        if (!cancelled) setServicesList(servicesData.data || []);
+
+      } catch (err) {
+        console.error("Dashboard Load Error: ", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
-    if (user && (user as any).providerStatus === 'approved') {
-        fetchDashboardData();
-    } else {
-      setLoading(false);
-    }
-  }, [user]);
+
+    initGuards();
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {

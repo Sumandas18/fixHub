@@ -22,7 +22,17 @@ function VerifyForm() {
   
   const [otpValues, setOtpValues] = useState(['', '', '', '']);
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const otpRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
+
+  React.useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resendCooldown > 0) {
+      timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   const handleOtpInput = (idx: number, val: string) => {
     if (!/^\d*$/.test(val)) return;
@@ -59,7 +69,7 @@ function VerifyForm() {
 
     setLoading(true);
     try {
-      const payload: Record<string, string> = { otp };
+      const payload: Record<string, string> = { otp: otp.toString() };
       if (safeUserId) payload.userId = safeUserId;
       if (safeEmail)  payload.email  = safeEmail;
 
@@ -78,20 +88,28 @@ function VerifyForm() {
   };
 
   const handleResend = async () => {
+    if (resendCooldown > 0 || resendLoading) return;
+    
     setOtpValues(['', '', '', '']);
     const safeUserId = (userId && userId !== 'undefined') ? userId : undefined;
     const safeEmail  = (email  && email  !== 'undefined') ? email  : undefined;
     if (!safeUserId && !safeEmail) return;
+    
+    setResendLoading(true);
     try {
       const payload: Record<string, string> = {};
       if (safeUserId) payload.userId = safeUserId;
       if (safeEmail)  payload.email  = safeEmail;
+      
       const res = await api.post('/user/resend', payload);
       if (res.data.success || res.status === 200) {
         toast.success('OTP resent successfully!');
+        setResendCooldown(30); // 30 second debounce
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to resend OTP');
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -153,8 +171,13 @@ function VerifyForm() {
         <motion.div variants={fadeUp} style={{ marginTop: 28, textAlign: 'center' }}>
           <p style={{ fontSize: 13, color: '#475569' }}>
             Didn't receive the code?{' '}
-            <button type="button" onClick={handleResend} style={{ background: 'none', border: 'none', color: '#eb5e28', fontWeight: 600, cursor: 'pointer', padding: 0 }}>
-              Resend OTP
+            <button 
+              type="button" 
+              onClick={handleResend} 
+              disabled={resendCooldown > 0 || resendLoading}
+              style={{ background: 'none', border: 'none', color: (resendCooldown > 0 || resendLoading) ? '#64748b' : '#eb5e28', fontWeight: 600, cursor: (resendCooldown > 0 || resendLoading) ? 'not-allowed' : 'pointer', padding: 0 }}
+            >
+              {resendLoading ? 'Sending...' : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
             </button>
           </p>
           <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '20px 0' }} />

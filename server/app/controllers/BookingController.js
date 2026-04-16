@@ -212,7 +212,7 @@ class BookingController {
       const booking_id = req.params.id;
 
       if (!status) {
-        return res.status(StatusCode.BAD_GATEWAY).json({
+        return res.status(StatusCode.BAD_REQUEST).json({
           success: false,
           message: "Status not available",
         });
@@ -268,7 +268,7 @@ class BookingController {
 
   async patchBookingStatus(req, res) {
     try {
-      const { status } = req.body;
+      const { status, reason } = req.body;
       const booking_id = req.params.id;
 
       if (!status || !['accepted', 'rejected'].includes(status)) {
@@ -294,7 +294,7 @@ class BookingController {
         if (status === 'accepted') {
           await sendOTPMails({ user: booking.customer_id, booking, type: "confirmBooking" });
         } else if (status === 'rejected') {
-          await sendOTPMails({ user: booking.customer_id, booking, type: "cancelBooking", reason: "Provider rejected the request" });
+          await sendOTPMails({ user: booking.customer_id, booking, type: "cancelBooking", reason: reason || "Provider rejected the request" });
         }
       } catch (err) {
         console.error("Error sending booking status email:", err);
@@ -318,7 +318,7 @@ class BookingController {
       const { otp, bookingId } = req.body;
 
       if (!otp || !bookingId) {
-        return res.status(StatusCode.BAD_GATEWAY).json({
+        return res.status(StatusCode.BAD_REQUEST).json({
           success: false,
           message: "All fields are required",
         });
@@ -333,34 +333,50 @@ class BookingController {
       }
 
       if (booking.status == "completed") {
-        return res.status(StatusCode.BAD_GATEWAY).json({
+        return res.status(StatusCode.BAD_REQUEST).json({
           success: false,
           message: "Service already completed",
         });
       }
       else {
 
-        const checkOTP = await serviceOTPModel.findOne({ bookingId, otp });
+        const checkOTP = await serviceOTPModel.findOne({ bookingId }).sort({ createdAt: -1 });
 
         if (!checkOTP) {
-          return res.status(StatusCode.BAD_GATEWAY).json({
+          return res.status(StatusCode.BAD_REQUEST).json({
+            success: false,
+            message: "OTP not found or has expired",
+          });
+        }
+
+        if (checkOTP.otp !== otp) {
+          return res.status(StatusCode.BAD_REQUEST).json({
             success: false,
             message: "Invalid OTP",
           });
         }
-        else {
 
-          booking.status = "completed";
-          await booking.save();
+        const now = Date.now();
+        const otpTime = checkOTP.createdAt.getTime();
+        const timeDiff = now - otpTime;
 
-          await serviceOTPModel.deleteMany({ bookingId });
-
-          return res.status(StatusCode.SUCCESS).json({
-            success: true,
-            message: `Service completed successfully`
+        // Valid for 5 minutes (300000 ms)
+        if (timeDiff > 300000) {
+          return res.status(StatusCode.BAD_REQUEST).json({
+            success: false,
+            message: "OTP has expired",
           });
-
         }
+
+        booking.status = "completed";
+        await booking.save();
+
+        await serviceOTPModel.deleteMany({ bookingId });
+
+        return res.status(StatusCode.SUCCESS).json({
+          success: true,
+          message: `Service completed successfully`
+        });
       }
     }
     catch (error) {
@@ -377,7 +393,7 @@ class BookingController {
       const { bookingId } = req.body;
 
       if (!bookingId) {
-        return res.status(StatusCode.BAD_GATEWAY).json({
+        return res.status(StatusCode.BAD_REQUEST).json({
           success: false,
           message: "Booking ID is required",
         });
@@ -392,7 +408,7 @@ class BookingController {
       }
 
       if (booking.status == "completed") {
-        return res.status(StatusCode.BAD_GATEWAY).json({
+        return res.status(StatusCode.BAD_REQUEST).json({
           success: false,
           message: "Service already completed",
         });

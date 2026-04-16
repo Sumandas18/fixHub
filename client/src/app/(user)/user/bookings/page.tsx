@@ -50,6 +50,14 @@ export default function UserBookingsPage() {
     return '#94a3b8';
   };
 
+  const getStatusText = (s: string) => {
+    if (s === 'pending') return 'Waiting for approval';
+    if (s === 'accepted') return 'Accepted';
+    if (s === 'rejected') return 'Rejected';
+    if (s === 'completed') return 'Completed';
+    return s;
+  };
+
   const handleRate = () => {
     if (selectedBooking) {
       selectedBooking.rating = ratingVal;
@@ -127,7 +135,7 @@ export default function UserBookingsPage() {
                     <td style={{ fontWeight: 600, color: '#4ade80' }}>{b.service_provider_id?.charges_per_hour ? `₹${b.service_provider_id.charges_per_hour}` : 'TBD'}</td>
                     <td>
                       <span style={{ padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: `${getStatusColor(b.status)}20`, color: getStatusColor(b.status), textTransform: 'capitalize' }}>
-                        {b.status}
+                        {getStatusText(b.status)}
                       </span>
                     </td>
                     <td>

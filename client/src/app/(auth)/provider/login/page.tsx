@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
+import { authApi } from '@/services/api/auth';
 import '../../admin/login/admin-login.css';
 
 const fadeUp: Variants = {
@@ -38,8 +39,20 @@ export default function ProviderLoginPage() {
     e.preventDefault();
     try {
       await login({ email: form.email, password: form.password }, 'provider');
+
+      // Fetch fresh profile from DB to get real providerStatus
+      const res = await authApi.getProfile();
+      const freshUser = res.data || res;
+      const status = freshUser?.providerStatus;
+
       toast.success('Welcome back, Provider!');
-      router.push('/provider/dashboard');
+
+      // Route based on actual approval status — NOT stale state
+      if (status === 'approved') {
+        router.replace('/provider/dashboard');
+      } else {
+        router.replace('/provider/pending');
+      }
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Invalid credentials');
     }

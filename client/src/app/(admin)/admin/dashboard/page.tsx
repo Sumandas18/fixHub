@@ -87,13 +87,8 @@ export default function AdminDashboardPage() {
     try {
       await adminApi.approveProvider(id, status);
       toast.success(`Provider ${status === 'approve' ? 'approved' : 'rejected'} successfully!`);
-      // Update local state without fetching again
-      setData(prev => ({
-        ...prev,
-        serviceProviders: prev.serviceProviders.map((sp: any) => 
-          sp._id === id ? { ...sp, status: status === 'approve' ? 'approved' : 'rejected' } : sp
-        )
-      }));
+      // Fully refetch to instantly mutate tabs & badges natively without manual refreshes.
+      await fetchDashboardData();
       setApprovalModal(null);
     } catch (err: any) {
       toast.error(err.response?.data?.message || `Failed to ${status} provider`);

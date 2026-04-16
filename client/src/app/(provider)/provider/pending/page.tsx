@@ -5,6 +5,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { Clock, Loader2, Upload, X, ShieldAlert } from 'lucide-react';
 import { providerApi } from '@/services/api/provider';
 import { adminApi } from '@/services/api/admin';
+import { authApi } from '@/services/api/auth';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -16,6 +18,7 @@ const fadeVariant = {
 
 export default function ProviderPendingPage() {
   const { user } = useAuthStore();
+  const router = useRouter();
   const fetchedRef = useRef(false);
 
   const [loading, setLoading] = useState(false);
@@ -34,20 +37,39 @@ export default function ProviderPendingPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Prevent duplicate fetches
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
-
-    const fetchServices = async () => {
+    let cancelled = false;
+    const initData = async () => {
       try {
+        const freshUserRes = await authApi.getProfile();
+        if (cancelled) return;
+        const freshUser = freshUserRes.data || freshUserRes;
+        
+        if (!freshUser) return;
+
+        // Non-provider role → kick to home
+        if (freshUser.user_role !== 'provider') {
+          router.replace('/');
+          return;
+        }
+
+        // Already approved: redirect without loop (only if not already on dashboard)
+        if (freshUser.providerStatus === 'approved') {
+          router.replace('/provider/dashboard');
+          return;
+        }
+
+        // Update store with fresh data
+        useAuthStore.setState({ user: freshUser });
+
         const servicesData = await adminApi.getServices();
-        setServicesList(servicesData.data || []);
+        if (!cancelled) setServicesList(servicesData.data || []);
       } catch (err) {
-        console.error('Failed to grab services for dropdown', err);
+        console.error('Failed to grab data', err);
       }
     };
-    fetchServices();
-  }, []);
+    initData();
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
