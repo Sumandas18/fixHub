@@ -9,6 +9,7 @@ interface AuthState {
   role: Role | null;
   isLoading: boolean;
   error: string | null;
+  hasHydrated: boolean;
 
   // Actions
   login: (credentials: LoginParams, role: Role) => Promise<void>;
@@ -24,6 +25,7 @@ export const useAuthStore = create<AuthState>()(
       role: null,
       isLoading: false,
       error: null,
+      hasHydrated: false,
 
       login: async (credentials, role) => {
         try {
@@ -43,6 +45,7 @@ export const useAuthStore = create<AuthState>()(
           const userData = resAny.data || resAny.user;
           // Ensure role is embedded in the user object
           const userWithRole = { ...userData, role };
+          // console.log(userWithRole,userData,role)
 
           // 2. Save state
           set({
@@ -68,6 +71,9 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage', 
       partialize: (state) => ({ user: state.user, role: state.role, token: state.token }), 
+      onRehydrateStorage: () => (state) => {
+        useAuthStore.setState({ hasHydrated: true });
+      },
     }
   )
 );

@@ -12,7 +12,7 @@ const contactPlacedEmail = require("./mail/contact/contactPlacedEmail");
 const contactReplyEmail = require("./mail/contact/contactReplyEmail");
 const passwordChangedEmail = require("./mail/passwordChangedEmail");
 
-const sendOTPMails = async ({ user, provider, booking, service, isBlocked, reason, type, otp, contact }) => {
+const sendOTPMails = async ({ user,link, provider, booking, service, isBlocked, reason, type, otp, contact }) => {
     try {
         let subject, html;
         const email = user?.user_email || contact?.email;
@@ -69,6 +69,10 @@ const sendOTPMails = async ({ user, provider, booking, service, isBlocked, reaso
         else if (type == "replySent") {
             subject = "Fixhub Support – Response to Your Query";
             html = contactReplyEmail(contact);
+        }
+        else if (type == "updatePassword") {
+            subject = "Fixhub - Password Updated";
+            html = passwordChangedEmail(user);
         }
         else if (type == "updatePassword") {
             subject = "Fixhub - Password Updated";

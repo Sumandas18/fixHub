@@ -1,16 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, Users, Mail, Phone, Search, ShieldOff, Shield } from 'lucide-react';
+import { Loader2, Users, Mail, Phone, Search, ShieldOff, Shield, ClipboardClock } from 'lucide-react';
 import { adminApi } from '@/services/api/admin';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { containerVariants, fadeUpVariant } from '@/lib/animations';
 
 export default function AdminCustomersPage() {
-  const [customers, setCustomers]         = useState<any[]>([]);
-  const [loading, setLoading]             = useState(true);
-  const [search, setSearch]               = useState('');
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
@@ -129,21 +129,23 @@ export default function AdminCustomersPage() {
                     }
                   </td>
                   <td>
-                    <span className={`badge ${c.isBlocked ? 'blocked' : 'active'}`}>
-                      {c.isBlocked ? 'Blocked' : 'Active'}
+                    <span className={`badge ${!c.isVerified ? 'pending' : c.isBlocked ? 'blocked' : 'active'}`}>
+                      {c.isVerified ? (c.isBlocked ? 'Blocked' : 'Active') : '-'}
                     </span>
                   </td>
                   {/* ── Block / Unblock Action ── */}
                   <td>
                     <button
-                      className={`btn btn-sm ${c.isBlocked ? 'btn-success' : 'btn-danger'}`}
+                      className={`btn btn-sm ${!c.isVerified ? 'btn-secondary' : c.isBlocked ? 'btn-success' : 'btn-danger'}`}
                       disabled={actionLoading === c._id}
-                      onClick={() => handleBlockUnblock(c._id, c.isBlocked)}
+                      onClick={() => c.isVerified ? handleBlockUnblock(c._id, c.isBlocked) : null}
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
                     >
                       {actionLoading === c._id
                         ? <Loader2 size={12} className="al-spin" />
-                        : c.isBlocked
+                        : !c.isVerified ?
+                        <><ClipboardClock size={12} /> Disabled</>
+                        :c.isBlocked
                           ? <><Shield size={12} /> Unblock</>
                           : <><ShieldOff size={12} /> Block</>
                       }

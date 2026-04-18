@@ -12,19 +12,20 @@ import { containerVariants, fadeUpVariant, scaleUpVariant } from '@/lib/animatio
 import { useAuthStore } from '@/store/useAuthStore';
 
 const recentReviews = [
-  { customer: 'Rahul Sharma', rating: 5, review: 'Excellent work, very professional!',   date: '2 days ago' },
-  { customer: 'Priya Mehta',  rating: 5, review: 'Fixed the issue quickly. Highly recommended.', date: '5 days ago' },
-  { customer: 'Amit Verma',   rating: 4, review: 'Good service, came on time.',            date: '1 week ago' },
+  { customer: 'Rahul Sharma', rating: 5, review: 'Excellent work, very professional!', date: '2 days ago' },
+  { customer: 'Priya Mehta', rating: 5, review: 'Fixed the issue quickly. Highly recommended.', date: '5 days ago' },
+  { customer: 'Amit Verma', rating: 4, review: 'Good service, came on time.', date: '1 week ago' },
 ];
 
 const quickActions = [
-  { label: 'View Bookings',     desc: 'Manage all requests',   href: '/provider/bookings',  iconClass: 'blue',   icon: CalendarDays },
-  { label: 'My Services',       desc: 'Edit rates & details',  href: '/provider/services',  iconClass: 'green',  icon: Wrench       },
-  { label: 'Reviews & Ratings', desc: 'See customer feedback', href: '/provider/reviews',   iconClass: 'purple', icon: Star         },
+  { label: 'View Bookings', desc: 'Manage all requests', href: '/provider/bookings', iconClass: 'blue', icon: CalendarDays },
+  { label: 'My Services', desc: 'Edit rates & details', href: '/provider/services', iconClass: 'green', icon: Wrench },
+  { label: 'Reviews & Ratings', desc: 'See customer feedback', href: '/provider/reviews', iconClass: 'purple', icon: Star },
 ];
 
 export default function ProviderDashboardPage() {
-  const { user } = useAuthStore();
+
+  const { user, hasHydrated } = useAuthStore();
 
   const router = useRouter();
   const redirectedRef = useRef(false); // guard against repeated redirects
@@ -88,7 +89,7 @@ export default function ProviderDashboardPage() {
       toast.error('Please fill all required fields');
       return;
     }
-    
+
     setSubmittingProfile(true);
     try {
       const fd = new FormData();
@@ -102,7 +103,7 @@ export default function ProviderDashboardPage() {
 
       await providerApi.completeProfile(fd);
       toast.success('Profile completed successfully! Awaiting approval.');
-      
+
       // Update local storage user state optimistically
       if (user) {
         useAuthStore.setState({ user: { ...user, isProfileCompleted: true, providerStatus: 'pending' } });
@@ -196,7 +197,7 @@ export default function ProviderDashboardPage() {
 
                     <div className="pv-field">
                       <label className="pv-label">Service Area ZIP Code *</label>
-                      <input type="text" className="pv-input" placeholder="e.g. 700001" required value={profileForm.service_area_zip} onChange={(e) => setProfileForm({ ...profileForm, service_area_zip: e.target.value })} />
+                      <input type="text" className="pv-input" placeholder="e.g. 700001, 700002, 700003" required value={profileForm.service_area_zip} onChange={(e) => setProfileForm({ ...profileForm, service_area_zip: e.target.value })} />
                     </div>
 
                     <div className="pv-field">
@@ -263,10 +264,10 @@ export default function ProviderDashboardPage() {
   });
 
   // Debug logging
-  console.log('ProviderRate:', providerRate);
-  console.log('Completed bookings count:', completedBookings.length);
-  console.log('Completed this month:', completedThisMonth.length);
-  console.log('Provider Profile:', providerProfile);
+  // console.log('ProviderRate:', providerRate);
+  // console.log('Completed bookings count:', completedBookings.length);
+  // console.log('Completed this month:', completedThisMonth.length);
+  // console.log('Provider Profile:', providerProfile);
 
   const totalEarningsThisMonth = completedThisMonth.length * providerRate;
   const thisWeekEarnings = completedThisWeek.length * providerRate;
@@ -278,10 +279,10 @@ export default function ProviderDashboardPage() {
     : '0.0';
 
   const stats = [
-    { label: 'Total Bookings',     value: totalBookings.toString(),   change: '+8%',  trend: 'up',   icon: CalendarDays, accent: 'blue'   },
-    { label: 'Completed Jobs',     value: completedJobs.toString(),   change: '+11%', trend: 'up',   icon: CheckCircle,  accent: 'green'  },
-    { label: 'Avg. Rating',        value: avgRating,                  change: '+0.2', trend: 'up',   icon: Star,         accent: 'purple' },
-    { label: 'Pending Requests',   value: pendingRequests.toString(), change: '-2',   trend: 'down', icon: Clock,        accent: 'orange' },
+    { label: 'Total Bookings', value: totalBookings.toString(), change: '+8%', trend: 'up', icon: CalendarDays, accent: 'blue' },
+    { label: 'Completed Jobs', value: completedJobs.toString(), change: '+11%', trend: 'up', icon: CheckCircle, accent: 'green' },
+    { label: 'Avg. Rating', value: avgRating, change: '+0.2', trend: 'up', icon: Star, accent: 'purple' },
+    { label: 'Pending Requests', value: pendingRequests.toString(), change: '-2', trend: 'down', icon: Clock, accent: 'orange' },
   ];
 
   // Format upcoming bookings (including completed ones)
@@ -349,9 +350,9 @@ export default function ProviderDashboardPage() {
         <div>
           <h1 className="pv-page-title">Provider Dashboard</h1>
           {user?.providerStatus === 'approved' && (
-             <span style={{ display: 'inline-block', padding: '4px 8px', background: 'rgba(74, 222, 128, 0.15)', color: '#4ade80', borderRadius: 6, fontSize: 12, fontWeight: 700, marginBottom: 8 }}>
-                ✓ VERIFIED PROVIDER
-             </span>
+            <span style={{ display: 'inline-block', padding: '4px 8px', background: 'rgba(74, 222, 128, 0.15)', color: '#4ade80', borderRadius: 6, fontSize: 12, fontWeight: 700, marginBottom: 8 }}>
+              ✓ VERIFIED PROVIDER
+            </span>
           )}
           <p className="pv-page-subtitle">Good morning! You have {pendingRequests} pending requests.</p>
         </div>
@@ -399,7 +400,7 @@ export default function ProviderDashboardPage() {
             </thead>
             <tbody>
               {upcomingBookings.length === 0 ? (
-                <tr><td colSpan={5} style={{textAlign:'center', color:'#64748b', padding: '40px 0'}}>No upcoming bookings found.</td></tr>
+                <tr><td colSpan={5} style={{ textAlign: 'center', color: '#64748b', padding: '40px 0' }}>No upcoming bookings found.</td></tr>
               ) : upcomingBookings.map((b) => (
                 <tr key={b.id}>
                   <td style={{ color: '#60a5fa', fontWeight: 600, fontFamily: 'monospace' }}>{b.id}</td>

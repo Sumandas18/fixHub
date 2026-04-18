@@ -14,12 +14,10 @@ class CustomerAuthController {
 
     async customerRegister(req, res) {
         try {
-            const { user_name, user_email, user_password, user_contact, user_address } = req.body;
+            const { user_name, user_email, user_password, user_contact } = req.body;
 
             // ── Validate required fields ──
-            if (!user_name || !user_email || !user_password || !user_contact || !user_address ||
-                !user_address.houseOrFlatNo || !user_address.street || !user_address.area ||
-                !user_address.city || !user_address.state || !user_address.pinCode) {
+            if (!user_name || !user_email || !user_password || !user_contact ) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
                     message: "All required fields must be filled",
@@ -53,8 +51,7 @@ class CustomerAuthController {
                 user_email,
                 user_password: hashPassword,
                 user_contact,
-                user_role: "customer",
-                user_address
+                user_role: "customer"
             });
 
             // ── Save OTP ──

@@ -202,12 +202,12 @@ export default function AdminProvidersPage() {
                           </button>
                         </>
                       )}
-                      <button
+                      {/* <button
                         className={`btn btn-sm btn-primary`}
                         // onClick={() => handleBlockUnblock(p._id, p.isBlocked)}
                       >
                        Details
-                      </button>
+                      </button> */}
                     </div>
                   </td>
                 </tr>

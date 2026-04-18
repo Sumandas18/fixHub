@@ -1,6 +1,9 @@
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 const StatusCode = require("../utils/statusCode");
 const userModel = require("../models/userModel");
-const checkCustomerUpdateValidate = require("./../utils/validation/update/checkUpdateCustomerValidation")
+const checkCustomerUpdateValidate = require("./../utils/validation/update/checkUpdateCustomerValidation");
+const sendOTPMails = require("../utils/sendMail");
 
 class CustomerController {
 
@@ -156,6 +159,116 @@ class CustomerController {
       });
     }
   }
+
+  
+    async resetPasswordLink(req, res) {
+        try {
+            const { email } = req.body;
+
+            if (!email) {
+                return res.status(STATUS_CODE.NOT_FOUND).json({
+                    success: false,
+                    message: "All fields required"
+                });
+            }
+
+            const existingUser = await userModel.findOne({ user_email: email });
+
+            if (!existingUser) {
+                return res.status(STATUS_CODE.BAD_GATEWAY).json({
+                    success: false,
+                    message: "User not found"
+                });
+            }
+
+            const secret = existingUser._id + process.env.JWT_SECRET_KEY;
+            const secretLink = jwt.sign({ userId: existingUser._id }, secret, { expiresIn: '10m' });
+
+            const resetPasswordLink = `${process.env.FRONTEND_LINK}/user/reset-password/${existingUser._id}/${secretLink}`;
+
+            await sendOTPMails({ user: existingUser, link: resetPasswordLink, type: 'forgetPassword' });
+
+            return res.status(StatusCode.OK).json({
+                status: true,
+                message: "Password reset email sent. Please check your email."
+            });
+        }
+        catch (err) {
+            return res.status(StatusCode.SERVER_ERROR).json({
+                success: false,
+                message: err.message
+            });
+        }
+    }
+
+    async resetPassword(req, res) {
+        try {
+            const { password, confirmPassword } = req.body;
+            const { id, token } = req.params;
+
+            if (!id || !token) {
+                return res.status(StatusCode.NOT_FOUND).json({
+                    success: false,
+                    message: "All parameters are required"
+                })
+            }
+
+            if (!password || !confirmPassword) {
+                return res.status(StatusCode.BAD_GATEWAY).json({
+                    success: false,
+                    message: "All fields are required"
+                })
+            }
+            else if (password != confirmPassword) {
+                return res.status(StatusCode.BAD_GATEWAY).json({
+                    success: false,
+                    message: "Password and confirm password are not same"
+                })
+            }
+            else {
+                const existingUser = await userModel.findById(id);
+
+                if (!existingUser) {
+                    return res.status(StatusCode.NOT_FOUND).json({
+                        success: false,
+                        message: "User not available"
+                    })
+                }
+                else {
+                    const secret = id + process.env.JWT_SECRET_KEY;
+
+                    await jwt.verify(token, secret);
+
+                    const salt = await bcrypt.genSalt(10);
+                    const hashPassword = bcrypt.hashSync(password, salt);
+
+                    const checkPassword = await bcrypt.compare(existingUser.password, hashPassword);
+
+                    if (checkPassword) {
+                        return res.status(StatusCode.BAD_GATEWAY).json({
+                            success: false,
+                            message: "New password and old password can't be same"
+                        })
+                    }
+                    else {
+                        existingUser.password = hashPassword;
+                        await existingUser.save();
+
+                        return res.status(StatusCode.OK).json({
+                            success: true,
+                            message: "Password reset successfully"
+                        })
+                    }
+                }
+            }
+        }
+        catch (err) {
+            return res.status(StatusCode.SERVER_ERROR).json({
+                success: false,
+                message: "Unable to reset password. Please try again later"
+            });
+        }
+    }
 
 }
 

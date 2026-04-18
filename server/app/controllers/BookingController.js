@@ -92,8 +92,52 @@ class BookingController {
 
   async getAllBookings(req, res) {
     try {
-      const bookings = await bookingModel.find()
-        .populate("customer_id").populate("service_provider_id");
+      const bookings = await bookingModel.aggregate([
+        {
+          $lookup: {
+            from: "users",
+            localField: "customer_id",
+            foreignField: "_id",
+            as: "customer"
+          }
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "service_provider_id",
+            foreignField: "_id",
+            as: "service_provider"
+          }
+        }
+        , {
+          $lookup: {
+            from: "services",
+            localField: "service_id",
+            foreignField: "_id",
+            as: "service"
+          }
+        },
+        {
+          $unwind: "$customer"
+        },
+        {
+          $unwind: "$service_provider"
+        },
+        {
+          $unwind: "$service"
+        },
+        {
+          $lookup: {
+            from: "serviceproviders",
+            localField: "service_provider_id",
+            foreignField: "provider_id",
+            as: "provider_details"
+          }
+        },
+        {
+          $unwind: "$provider_details"
+        }
+      ]);
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,
@@ -185,8 +229,53 @@ class BookingController {
           message: "Unauthorised access"
         })
       }
-      const bookings = await bookingModel.find({ customer_id })
-        .populate("service_provider_id");
+      const bookings = await bookingModel.aggregate([
+        {
+          $match: { customer_id: new mongoose.Types.ObjectId(customer_id) }
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "service_provider_id",
+            foreignField: "_id",
+            as: "service_provider"
+          }
+        },
+        {
+          $lookup: {
+            from: "services",
+            localField: "service_id",
+            foreignField: "_id",
+            as: "service"
+          }
+        },
+        {
+          $unwind: {
+            path: "$service_provider",
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $unwind: {
+            path: "$service",
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $lookup: {
+            from: "serviceproviders",
+            localField: "service_provider_id",
+            foreignField: "provider_id",
+            as: "provider_details"
+          }
+        },
+        {
+          $unwind: {
+            path: "$provider_details"
+          }
+
+        }
+      ]);
 
       return res.status(StatusCode.SUCCESS).json({
         success: true,

@@ -123,15 +123,15 @@ export default function AdminBookingsPage() {
                   </td>
                   <td>
                     <div className="td-name">
-                      <div className="td-avatar">{(b.customer_id?.user_name || 'U')[0].toUpperCase()}</div>
-                      <span style={{ color: '#f1f5f9', fontWeight: 600 }}>{b.customer_id?.user_name || '—'}</span>
+                      <div className="td-avatar">{(b.customer?.user_name || 'U')[0].toUpperCase()}</div>
+                      <span style={{ color: '#f1f5f9', fontWeight: 600 }}>{b.customer?.user_name || '—'}</span>
                     </div>
                   </td>
                   <td style={{ color: '#94a3b8' }}>
-                    {b.service_provider_id?.service_id?.service_name || b.service_id?.service_name || 'Booked Service'}
+                    {b.service_provider?.service?.service_name || b.service?.service_name || 'Booked Service'}
                   </td>
                   <td style={{ color: '#94a3b8' }}>
-                    {b.service_provider_id?.provider_id?.name || 'Awaiting Provider'}
+                    {b.service_provider?.user_name || 'Awaiting Provider'}
                   </td>
                   <td style={{ color: '#64748b', fontSize: 13 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -141,14 +141,14 @@ export default function AdminBookingsPage() {
                     </div>
                   </td>
                   <td style={{ color: '#4ade80', fontWeight: 600 }}>
-                    ₹{b.service_provider_id?.charges_per_hour ?? '—'}
+                    ₹{b.provider_details?.charges_per_hour ?? '—'}
                   </td>
                   <td>
                     <span className={`badge ${b.status}`}>{b.status}</span>
                   </td>
-                  <td>
+                  {/* <td>
                     <span style={{ fontSize: 12, color: '#64748b', fontStyle: 'italic' }}>Managed by provider</span>
-                  </td>
+                  </td> */}
                 </tr>
               ))}
             </tbody>

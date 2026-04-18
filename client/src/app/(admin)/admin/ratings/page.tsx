@@ -60,7 +60,7 @@ export default function AdminRatingsPage() {
   const avgRating =
     ratings.length > 0
       ? (ratings.reduce((s, r) => s + (r.rating || 0), 0) / ratings.length).toFixed(1)
-      : '—';
+      : '0.0';
 
   const filtered = ratings.filter((r) => {
     const q = search.toLowerCase();

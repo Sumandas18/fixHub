@@ -107,15 +107,7 @@ export default function RegisterPage() {
           user_email: email,
           user_contact: phone,
           user_password: password,
-          user_role: 'customer',
-          user_address: {
-            houseOrFlatNo: '1',
-            street: 'Main Street',
-            area: 'Downtown',
-            city: 'Cityville',
-            state: 'State',
-            pinCode: '000000',
-          },
+          user_role: 'customer'
         });
 
         if (res.data.success || res.status === 201) {

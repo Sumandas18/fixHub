@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { containerVariants, fadeUpVariant, scaleUpVariant } from '@/lib/animations';
 import { providerApi } from '@/services/api/provider';
 
-const TABS = ['All', 'Upcoming', 'Accepted', 'Completed', 'Cancelled', 'Rejected'];
+const TABS = ['All', 'Pending', 'Upcoming', 'Accepted', 'Completed', 'Cancelled'];
 
 export default function UserBookingsPage() {
   const [activeTab, setActiveTab] = useState('All');
@@ -37,10 +37,10 @@ export default function UserBookingsPage() {
   const filtered = bookings.filter((b) => {
     if (activeTab === 'All') return true;
     if (activeTab === 'Upcoming') return b.status === 'pending' || b.status === 'confirmed' || b.status === 'in-progress';
-    if (activeTab === 'Accepted') return b.status === 'accepted';
+    if (activeTab === 'Accepted') return b.status === 'confirmed';
     if (activeTab === 'Completed') return b.status === 'completed';
     if (activeTab === 'Cancelled') return b.status === 'cancelled';
-    if (activeTab === 'Rejected') return b.status === 'rejected';
+    if (activeTab === 'Pending') return b.status === 'pending';
     return true;
   });
 
@@ -54,14 +54,14 @@ export default function UserBookingsPage() {
 
   const getStatusText = (s: string) => {
     if (s === 'pending') return 'Waiting for approval';
-    if (s === 'accepted') return 'Accepted';
+    if (s === 'confirmed') return 'Accepted';
     if (s === 'rejected') return 'Rejected';
     if (s === 'completed') return 'Completed';
     return s;
   };
 
   const handleRate = async () => {
-    
+
     if (selectedBooking) {
 
       if (!ratingVal || !reviewText) return;
@@ -130,22 +130,22 @@ export default function UserBookingsPage() {
                 filtered.map((b) => (
                   <tr key={b._id}>
                     <td>
-                      <p style={{ fontWeight: 600, color: '#f1f5f9' }}>{b.service_provider_id?.service_id?.service_name || b.service_id?.service_name || 'Booked Service'}</p>
+                      <p style={{ fontWeight: 600, color: '#f1f5f9' }}>{b?.service?.service_name || b.service_id?.service_name || 'Booked Service'}</p>
                       <p style={{ fontSize: 12, color: '#64748b', fontFamily: 'monospace' }}>{b._id.substring(b._id.length - 6).toUpperCase()}</p>
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#eb5e28,#1c4ed8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff' }}>
-                          {(b.service_provider_id?.provider_id?.name || 'A')[0]}
+                          {(b?.service_provider?.user_name || 'A')[0]}
                         </div>
-                        {b.service_provider_id?.provider_id?.name || 'Awaiting Provider'}
+                        {b?.service_provider?.user_name || 'Awaiting Provider'}
                       </div>
                     </td>
                     <td style={{ color: '#94a3b8' }}>
                       {new Date(b.scheduled_date || b.createdAt).toLocaleDateString('en-US')}<br />
                       <span style={{ fontSize: 12, color: '#64748b' }}>{b.scheduled_time || 'TBD'}</span>
                     </td>
-                    <td style={{ fontWeight: 600, color: '#4ade80' }}>{b.service_provider_id?.charges_per_hour ? `₹${b.service_provider_id.charges_per_hour}` : 'TBD'}</td>
+                    <td style={{ fontWeight: 600, color: '#4ade80' }}>{b?.provider_details?.charges_per_hour ? `₹${b.provider_details.charges_per_hour}` : 'TBD'} / hr.</td>
                     <td>
                       <span style={{ padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: `${getStatusColor(b.status)}20`, color: getStatusColor(b.status), textTransform: 'capitalize' }}>
                         {getStatusText(b.status)}
@@ -223,7 +223,7 @@ export default function UserBookingsPage() {
               </div>
               <div className="usr-book-modal-footer">
                 <button className="usr-btn usr-btn-ghost" onClick={() => setSelectedBooking(null)}>Cancel</button>
-                <button className={`usr-btn usr-btn-primary ${resendLoading ? 'cursor-not-allowed' : 'cursor-pointer'}`} disabled={ratingVal === 0} onClick={()=>handleRate()}>
+                <button className={`usr-btn usr-btn-primary ${resendLoading ? 'cursor-not-allowed' : 'cursor-pointer'}`} disabled={ratingVal === 0} onClick={() => handleRate()}>
                   {resendLoading && <Loader2 className="usr-spin" size={14} color="#fff" style={{ marginRight: 2 }} />}
                   {resendLoading ? 'Submitting...' : 'Submit Review'}
                 </button>

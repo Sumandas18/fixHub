@@ -39,7 +39,7 @@ const checkCustomerCustomerValidate = JOI.object({
 
     user_role: JOI.string().valid("customer").default("customer"),
 
-    user_address: addressSchema.required()
+    // user_address: addressSchema.required()
 });
 
 module.exports = checkCustomerCustomerValidate;

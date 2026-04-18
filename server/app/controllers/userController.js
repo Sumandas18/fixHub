@@ -70,7 +70,7 @@ class UserController {
         }
     }
 
-      async verifyOTP(req, res) {
+    async verifyOTP(req, res) {
         try {
             const { userId, otp } = req.body;
 
@@ -97,30 +97,24 @@ class UserController {
                     message: "User not found"
                 })
             }
-            
+
             if (user.isVerified) {
                 return res.status(StatusCode.BAD_REQUEST).json({
                     success: false,
                     message: "User already verified"
                 })
             }
-            
-            const checkOTP = await otpModel
-              .findOne({ userId: user._id })
-              .sort({ createdAt: -1 });
 
-            // ADD DEBUG LOG (must)
-            console.log("DB OTP:", checkOTP?.otp);
-            console.log("USER OTP:", otp);
-            console.log("CreatedAt:", checkOTP?.createdAt);
-            console.log("Now:", new Date());
+            const checkOTP = await otpModel
+                .findOne({ userId: user._id })
+                .sort({ createdAt: -1 });
 
             // FIX OTP comparison (type-safe)
             if (!checkOTP || String(checkOTP.otp) !== String(otp)) {
-              return res.status(StatusCode.BAD_REQUEST).json({
-                success: false,
-                message: "Invalid OTP"
-              });
+                return res.status(StatusCode.BAD_REQUEST).json({
+                    success: false,
+                    message: "Invalid OTP"
+                });
             }
 
             // FIX expiration logic
@@ -132,12 +126,12 @@ class UserController {
 
             // SET expiry = 5 minutes
             if (diff > 5 * 60 * 1000) {
-              return res.status(StatusCode.BAD_REQUEST).json({
-                success: false,
-                message: "OTP expired"
-              });
+                return res.status(StatusCode.BAD_REQUEST).json({
+                    success: false,
+                    message: "OTP expired"
+                });
             }
-            
+
             user.isVerified = true;
             await user.save();
 
@@ -339,11 +333,11 @@ class UserController {
             }
 
             const userDetails = await userModel.findById(user.user_id).lean();
-            
+
             if (userDetails && userDetails.user_role === 'provider') {
                 const serviceProviderModel = require('../models/serviceProviderModel');
                 const providerProfile = await serviceProviderModel.findOne({ provider_id: userDetails._id }).lean();
-                
+
                 userDetails.isProfileCompleted = !!providerProfile;
                 userDetails.providerStatus = providerProfile?.status || 'pending';
             }

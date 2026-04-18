@@ -33,8 +33,8 @@ class ServiceProviderController {
                 });
             }
 
-            if (typeof service_area_zip === "string") {
-                service_area_zip = [service_area_zip];
+            if (typeof service_area_zip === 'string') {
+                service_area_zip = service_area_zip.split(',').map(zip => zip.trim());
             }
 
             const { data, error } = createServiceProviderValidation.validate({ service_area_zip, experience, charges_per_hour })
@@ -103,11 +103,11 @@ class ServiceProviderController {
             }
 
             let serviceProviderObj = {
-                service_id, 
-                service_area_zip, 
-                experience, 
-                charges_per_hour: Number(charges_per_hour), 
-                isProfileCompleted: true, 
+                service_id,
+                service_area_zip,
+                experience,
+                charges_per_hour: Number(charges_per_hour),
+                isProfileCompleted: true,
                 status: 'pending'
             };
 
@@ -202,12 +202,14 @@ class ServiceProviderController {
             let provider_id = req.user?.user_role === 'provider' ? (req.user.user_id || req.user._id) : (req.query?.provider_id || req.body?.provider_id);
             let service_id = req.query?.service_id || req.body?.service_id;
 
+            const user = await userModel.findById(req.user.user_id || req.user._id);
+
             if (provider_id) {
                 fetchServiceProvider = await serviceProviderModel
                     .find({ provider_id })
                     .populate('service_id') || [];
-            } else if (service_id) {
-                // For users requesting providers by service, only show approved providers with completed profiles
+            }
+            else if (service_id) {
                 fetchServiceProvider = await serviceProviderModel.aggregate([
                     {
                         $match: {
@@ -260,6 +262,11 @@ class ServiceProviderController {
                 ])
             }
 
+            if (user.user_role === 'customer') {
+                fetchServiceProvider = fetchServiceProvider.filter(provider => provider.service_area_zip.includes(user.user_address.pinCode));
+            }
+
+            // console.log(user)
             // console.log('fetchServiceProvider', fetchServiceProvider);
             // Always return empty array if no services
             return res.status(StatusCode.SUCCESS).json({
