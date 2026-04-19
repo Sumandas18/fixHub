@@ -25,9 +25,11 @@ export default function ProviderGuard({ children }: { children: React.ReactNode 
 
     if (user?.role === 'provider' || user?.user_role === 'provider') {
       const status = (user as any)?.providerStatus ?? user?.providerDetails?.status;
-      if (status !== 'approved' && pathname !== '/provider/pending') {
+      const isPendingPath = pathname === '/provider/pending' || pathname.startsWith('/provider/pending/');
+
+      if (status !== 'approved' && !isPendingPath) {
         router.replace('/provider/pending');
-      } else if (status === 'approved' && pathname === '/provider/pending') {
+      } else if (status === 'approved' && isPendingPath) {
         router.replace('/provider/dashboard');
       }
     }
@@ -36,7 +38,8 @@ export default function ProviderGuard({ children }: { children: React.ReactNode 
   if (!mounted) return null; // avoid hydration mismatch
 
   const status = (user as any)?.providerStatus ?? user?.providerDetails?.status;
-  if ((status !== 'approved') && pathname !== '/provider/pending') {
+  const isPendingPath = pathname === '/provider/pending' || pathname.startsWith('/provider/pending/');
+  if ((status !== 'approved') && !isPendingPath) {
     return null; // hide content while redirecting
   }
 

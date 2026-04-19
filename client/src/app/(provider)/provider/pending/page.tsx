@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { ChangeEvent, useEffect, useState, useRef } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Clock, Loader2, Upload, X, ShieldAlert, CheckCircle } from 'lucide-react';
+import { Clock, Loader2, Upload, X, ShieldAlert } from 'lucide-react';
 import { providerApi } from '@/services/api/provider';
 import { adminApi } from '@/services/api/admin';
-import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,7 +16,6 @@ const fadeVariant = {
 
 export default function ProviderPendingPage() {
   const { user } = useAuthStore();
-  const router = useRouter();
 
   const [loading, setLoading] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -62,12 +60,7 @@ export default function ProviderPendingPage() {
 
   if (!user) return null;
 
-  const handleAuthorized = () => {
-    console.log("BUTTON CLICKED");
-    router.push('/provider/dashboard');
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setProfileImg(e.target.files[0]);
       setProfileImgPreview(URL.createObjectURL(e.target.files[0]));
@@ -127,9 +120,6 @@ export default function ProviderPendingPage() {
           backdropFilter: 'blur(16px)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', zIndex: 10
         }}
       >
-        {/* DEBUG: remove after testing */}
-        {console.log("STATUS:", (user as any)?.providerStatus) as any}
-
         {isProfileIncomplete ? (
            <>
              <ShieldAlert size={56} color="#a855f7" style={{ marginBottom: 20, marginLeft: 'auto', marginRight: 'auto' }} />
@@ -155,35 +145,6 @@ export default function ProviderPendingPage() {
                }}
              >
                Complete Profile to Get Approved
-             </motion.button>
-           </>
-        ) : (user as any).providerStatus === 'approved' ? (
-           <>
-             <CheckCircle size={56} color="#22c55e" style={{ marginBottom: 20, marginLeft: 'auto', marginRight: 'auto' }} />
-             <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 16, background: 'linear-gradient(90deg, #22c55e, #16a34a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-               You Are Authorized!
-             </h1>
-             <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.6, marginBottom: 32 }}>
-               Your account has been approved by admin. Click below to go to your dashboard.
-             </p>
-             <motion.button
-               whileHover={{ scale: 1.05 }}
-               whileTap={{ scale: 0.95 }}
-               onClick={() => {
-                 console.log("CLICKED NAVIGATION");
-                 window.location.href = '/provider/dashboard';
-               }}
-               style={{
-                 padding: '0.9rem 2rem',
-                 background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-                 border: 'none',
-                 borderRadius: 50, color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer',
-                 boxShadow: '0 0 24px rgba(34,197,94,0.5)',
-                 width: '100%',
-                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
-               }}
-             >
-               ✓ Go to Dashboard
              </motion.button>
            </>
         ) : (
@@ -213,9 +174,31 @@ export default function ProviderPendingPage() {
               <form onSubmit={handleCompleteProfile} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: 8, fontSize: '0.875rem', color: '#cbd5e1' }}>Select Service Category *</label>
-                  <select required value={profileForm.service_id} onChange={(e) => setProfileForm({...profileForm, service_id: e.target.value})} style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#f8fafc', fontSize: '0.95rem', outline: 'none' }}>
-                    <option value="" disabled>Choose a service...</option>
-                    {servicesList.map(s => <option key={s._id} value={s._id}>{s.service_name}</option>)}
+                  <select
+                    required
+                    value={profileForm.service_id}
+                    onChange={(e) => setProfileForm({ ...profileForm, service_id: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      background: '#111827',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: 12,
+                      color: '#f8fafc',
+                      fontSize: '0.95rem',
+                      outline: 'none',
+                      appearance: 'none',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                      boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.05)',
+                    }}
+                  >
+                    <option value="" disabled style={{ background: '#111827', color: '#94a3b8' }}>Choose a service...</option>
+                    {servicesList.map(s => (
+                      <option key={s._id} value={s._id} style={{ background: '#111827', color: '#f8fafc' }}>
+                        {s.service_name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
