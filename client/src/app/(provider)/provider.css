@@ -7,10 +7,10 @@
 .pv-shell {
   display: flex;
   min-height: 100vh;
-  background-color: #0b0f19;
+  background-color: var(--color-black);
   background-image:
-    radial-gradient(at 85% 20%, rgba(28,78,216,0.08) 0px, transparent 50%),
-    radial-gradient(at 15% 75%, rgba(124,58,237,0.06) 0px, transparent 50%);
+    radial-gradient(at 85% 20%, rgba(255, 107, 0, 0.06) 0px, transparent 50%),
+    radial-gradient(at 15% 75%, rgba(255, 255, 255, 0.03) 0px, transparent 50%);
 }
 
 /* ── Sidebar ── */
@@ -39,7 +39,7 @@
 .pv-logo-icon {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, #1c4ed8, #2563eb);
+  background: var(--gradient-primary);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -60,9 +60,9 @@
   font-weight: 600;
   letter-spacing: 0.8px;
   text-transform: uppercase;
-  color: #60a5fa;
-  background: rgba(96,165,250,0.12);
-  border: 1px solid rgba(96,165,250,0.25);
+  color: var(--color-orange);
+  background: rgba(255, 107, 0, 0.1);
+  border: 1px solid rgba(255, 107, 0, 0.2);
   border-radius: 4px;
   padding: 2px 6px;
   margin-left: auto;
@@ -162,11 +162,11 @@
 
 .pv-nav-link.active {
   color: #fff;
-  background: rgba(96,165,250,0.12);
-  border-left: 3px solid #60a5fa;
+  background: rgba(255, 107, 0, 0.1);
+  border-left: 3px solid var(--color-orange);
 }
 
-.pv-nav-link.active svg { color: #60a5fa; }
+.pv-nav-link.active svg { color: var(--color-orange); }
 
 /* Footer */
 .pv-sidebar-footer {
@@ -188,7 +188,7 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1c4ed8, #7c3aed);
+  background: var(--gradient-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -294,7 +294,7 @@
 }
 
 .pv-stat-card:hover {
-  border-color: rgba(96,165,250,0.3);
+  border-color: rgba(255, 107, 0, 0.3);
   transform: translateY(-2px);
 }
 
@@ -313,10 +313,10 @@
   justify-content: center;
 }
 
-.pv-stat-icon.blue   { background: rgba(96,165,250,0.15); color: #60a5fa; }
-.pv-stat-icon.green  { background: rgba(74,222,128,0.15); color: #4ade80; }
-.pv-stat-icon.orange { background: rgba(235,94,40,0.15);  color: #eb5e28; }
-.pv-stat-icon.purple { background: rgba(167,139,250,0.15);color: #a78bfa; }
+.pv-stat-icon.blue   { background: rgba(255, 255, 255, 0.05); color: #f1f5f9; }
+.pv-stat-icon.green  { background: rgba(34, 197, 94, 0.1); color: #4ade80; }
+.pv-stat-icon.orange { background: rgba(255, 107, 0, 0.1);  color: var(--color-orange); }
+.pv-stat-icon.purple { background: rgba(255, 107, 0, 0.1);color: var(--color-orange); }
 
 .pv-stat-change {
   font-size: 12px;
@@ -377,14 +377,14 @@
 .pv-card-action {
   font-size: 13px;
   font-weight: 500;
-  color: #60a5fa;
+  color: var(--color-orange);
   cursor: pointer;
   background: none;
   border: none;
   transition: color 0.15s;
   text-decoration: none;
 }
-.pv-card-action:hover { color: #3b82f6; }
+.pv-card-action:hover { color: var(--color-orange-hover); }
 
 /* ── Booking table ── */
 .pv-table {
@@ -437,10 +437,10 @@
 .pv-badge.accepted::before   { background: #4ade80; }
 .pv-badge.rejected   { color: #f87171; background: rgba(239,68,68,0.1); }
 .pv-badge.rejected::before   { background: #f87171; }
-.pv-badge.confirmed  { color: #60a5fa; background: rgba(96,165,250,0.1); }
-.pv-badge.confirmed::before  { background: #60a5fa; }
-.pv-badge.completed  { color: #a78bfa; background: rgba(139,92,246,0.1); }
-.pv-badge.completed::before  { background: #a78bfa; }
+.pv-badge.confirmed  { color: #f1f5f9; background: rgba(255, 255, 255, 0.05); }
+.pv-badge.confirmed::before  { background: #f1f5f9; }
+.pv-badge.completed  { color: var(--color-orange); background: rgba(255, 107, 0, 0.1); }
+.pv-badge.completed::before  { background: var(--color-orange); }
 .pv-badge.cancelled  { color: #f87171; background: rgba(239,68,68,0.1); }
 .pv-badge.cancelled::before  { background: #f87171; }
 .pv-badge.in-progress { color: #4ade80; background: rgba(74,222,128,0.1); }
@@ -460,16 +460,16 @@
   transition: all 0.15s;
   white-space: nowrap;
 }
-.pv-btn-primary  { background: #1c4ed8; color: #fff; }
-.pv-btn-primary:hover  { background: #1e40af; }
+.pv-btn-primary  { background: var(--color-orange); color: #fff; }
+.pv-btn-primary:hover  { background: var(--color-orange-hover); }
 .pv-btn-success  { background: rgba(74,222,128,0.12); color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
 .pv-btn-success:hover  { background: rgba(74,222,128,0.22); }
 .pv-btn-danger   { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
 .pv-btn-danger:hover   { background: rgba(239,68,68,0.22); }
 .pv-btn-ghost    { background: rgba(255,255,255,0.05); color: #94a3b8; border: 1px solid rgba(255,255,255,0.08); }
 .pv-btn-ghost:hover    { background: rgba(255,255,255,0.09); color: #f1f5f9; }
-.pv-btn-otp { background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.2); }
-.pv-btn-otp:hover { background: rgba(96,165,250,0.22); }
+.pv-btn-otp { background: rgba(255, 107, 0, 0.1); color: var(--color-orange); border: 1px solid rgba(255, 107, 0, 0.2); }
+.pv-btn-otp:hover { background: rgba(255, 107, 0, 0.2); }
 .pv-btn-sm  { padding: 5px 10px; font-size: 12px; }
 
 /* ── Modal overlay ── */
@@ -564,7 +564,7 @@
   outline: none;
   transition: border-color 0.15s;
 }
-.pv-otp-box:focus { border-color: #60a5fa; }
+.pv-otp-box:focus { border-color: var(--color-orange); }
 
 .pv-otp-resend {
   text-align: center;
@@ -575,7 +575,7 @@
 .pv-otp-resend button {
   background: none;
   border: none;
-  color: #60a5fa;
+  color: var(--color-orange);
   font-weight: 600;
   cursor: pointer;
   font-size: 13px;
@@ -593,7 +593,7 @@
   cursor: pointer;
   outline: none;
 }
-.pv-select:focus { border-color: #60a5fa; }
+.pv-select:focus { border-color: var(--color-orange); }
 
 /* ── Input/Form ── */
 .pv-field { margin-bottom: 18px; }
@@ -611,7 +611,7 @@
   transition: border-color 0.15s;
 }
 .pv-input::placeholder { color: #475569; }
-.pv-input:focus { border-color: #60a5fa; }
+.pv-input:focus { border-color: var(--color-orange); }
 
 /* ── Service cards ── */
 .pv-services-grid {
@@ -631,7 +631,7 @@
   padding: 20px;
   transition: border-color 0.15s, transform 0.15s;
 }
-.pv-service-card:hover { border-color: rgba(96,165,250,0.3); transform: translateY(-2px); }
+.pv-service-card:hover { border-color: rgba(255, 107, 0, 0.3); transform: translateY(-2px); }
 
 .pv-service-card-top {
   display: flex;
@@ -643,8 +643,8 @@
 .pv-service-icon {
   width: 40px; height: 40px;
   border-radius: 10px;
-  background: rgba(96,165,250,0.12);
-  color: #60a5fa;
+  background: rgba(255, 107, 0, 0.1);
+  color: var(--color-orange);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -664,8 +664,8 @@
 
 /* ── Earnings strip ── */
 .pv-earnings-strip {
-  background: linear-gradient(135deg, rgba(28,78,216,0.15) 0%, rgba(124,58,237,0.12) 100%);
-  border: 1px solid rgba(96,165,250,0.2);
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.08) 0%, rgba(5, 8, 16, 0.4) 100%);
+  border: 1px solid rgba(255, 107, 0, 0.2);
   border-radius: 14px;
   padding: 22px;
   display: flex;
@@ -716,7 +716,7 @@
   cursor: pointer;
   text-decoration: none;
 }
-.pv-quick-action-item:hover { background: rgba(255,255,255,0.06); border-color: rgba(96,165,250,0.2); }
+.pv-quick-action-item:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 107, 0, 0.2); }
 
 .pv-qa-icon {
   width: 36px; height: 36px;
@@ -724,10 +724,10 @@
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.pv-qa-icon.blue   { background: rgba(96,165,250,0.12); color: #60a5fa; }
-.pv-qa-icon.green  { background: rgba(74,222,128,0.12); color: #4ade80; }
-.pv-qa-icon.purple { background: rgba(167,139,250,0.12); color: #a78bfa; }
-.pv-qa-icon.orange { background: rgba(235,94,40,0.12); color: #eb5e28; }
+.pv-qa-icon.blue   { background: rgba(255, 255, 255, 0.05); color: #f1f5f9; }
+.pv-qa-icon.green  { background: rgba(34, 197, 94, 0.1); color: #4ade80; }
+.pv-qa-icon.purple { background: rgba(255, 107, 0, 0.1); color: var(--color-orange); }
+.pv-qa-icon.orange { background: rgba(255, 107, 0, 0.1); color: var(--color-orange); }
 
 .pv-qa-label { font-size: 13px; font-weight: 600; color: #cbd5e1; }
 .pv-qa-desc  { font-size: 11px; color: #475569; }
@@ -756,7 +756,7 @@
 }
 
 .pv-tab.active {
-  background: #1c4ed8;
+  background: var(--color-orange);
   color: #fff;
 }
 

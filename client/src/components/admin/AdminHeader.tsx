@@ -2,6 +2,7 @@
 
 import { Bell, Search } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
+import Image from 'next/image';
 
 export default function AdminHeader() {
   const { user } = useAuthStore();
@@ -10,51 +11,46 @@ export default function AdminHeader() {
   const displayInitial = (displayName[0] || 'A').toUpperCase();
 
   return (
-    <header className="admin-header">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '8px',
-            padding: '7px 14px',
-            width: '260px',
-          }}
-        >
-          <Search size={15} color="#4a5568" />
+    <header className="sticky top-0 z-40 h-16 w-full flex items-center justify-between px-6 bg-[#0B0F1A]/80 backdrop-blur-xl border-b border-white/10 shadow-sm">
+      
+      {/* Left Area - Mobile Logo (Visible on smaller screens, or integrated in header) */}
+      <div className="flex items-center gap-4">
+        {/* Mobile menu could go here */}
+        <div className="md:hidden flex items-center">
+            <Image src="/logo/FixHublogo.png" alt="FixHub Logo" width={90} height={26} style={{ objectFit: 'contain' }} />
+        </div>
+
+        {/* Global Search Bar (Glassmorphism look) */}
+        <div className="hidden md:flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2 w-64 focus-within:ring-1 focus-within:ring-[#FF6B00]/50 transition-all">
+          <Search size={16} className="text-[#94a3b8]" />
           <input
             type="text"
             placeholder="Search anything..."
-            style={{
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              color: '#94a3b8',
-              fontSize: '13px',
-              width: '100%',
-            }}
+            className="bg-transparent border-none outline-none text-white text-sm w-full placeholder-[#64748b]"
           />
         </div>
       </div>
 
-      <div className="admin-header-right">
-        <button className="header-notification-btn">
-          <Bell size={17} />
-          <span className="header-notification-dot" />
+      {/* Right Area - Admin Profile & Notifications */}
+      <div className="flex items-center gap-5">
+        
+        {/* Notification Bell */}
+        <button className="relative p-2 rounded-full text-[#94a3b8] bg-white/5 border border-white/5 hover:text-white hover:bg-white/10 transition-colors">
+          <Bell size={18} />
+          <span className="absolute top-1 right-1 w-2 h-2 bg-[#FF6B00] rounded-full border border-[#0B0F1A]"></span>
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div className="sidebar-avatar" style={{ width: 36, height: 36, fontSize: 14 }}>
+        {/* Admin Profile */}
+        <div className="flex items-center gap-3 bg-white/5 border border-white/5 rounded-full py-1 pr-4 pl-1 cursor-pointer hover:bg-white/10 transition-colors">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#FF6B00] to-orange-800 flex items-center justify-center text-xs font-bold text-white shadow-lg">
             {displayInitial}
           </div>
-          <div>
-            <p style={{ fontSize: '13px', fontWeight: 600, color: '#f1f5f9', lineHeight: 1.3 }}>{displayName}</p>
-            <p style={{ fontSize: '11px', color: '#4a5568' }}>{displayEmail}</p>
+          <div className="hidden sm:block">
+            <p className="text-sm font-bold text-white leading-tight">{displayName}</p>
+            <p className="text-[10px] text-[#64748b] truncate max-w-[120px]">{displayEmail}</p>
           </div>
         </div>
+        
       </div>
     </header>
   );

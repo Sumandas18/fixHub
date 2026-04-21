@@ -62,14 +62,14 @@ export default function ProviderLoginPage() {
     width: '100%',
     padding: '13px 16px',
     background: 'rgba(255,255,255,0.05)',
-    border: `1px solid ${focusedField === field ? 'rgba(96,165,250,0.55)' : 'rgba(255,255,255,0.09)'}`,
+    border: `1px solid ${focusedField === field ? 'rgba(255, 107, 0, 0.55)' : 'rgba(255, 255, 255, 0.09)'}`,
     borderRadius: 12,
     color: '#f1f5f9',
     fontSize: 14,
     outline: 'none',
     fontFamily: 'inherit',
     transition: 'border-color 0.2s, box-shadow 0.2s',
-    boxShadow: focusedField === field ? '0 0 0 3px rgba(59,130,246,0.12)' : 'none',
+    boxShadow: focusedField === field ? '0 0 0 3px rgba(255, 107, 0, 0.12)' : 'none',
     boxSizing: 'border-box' as const,
   });
 
@@ -77,9 +77,9 @@ export default function ProviderLoginPage() {
     <div style={{ minHeight: '100vh', display: 'flex', background: '#080c14', position: 'relative', overflow: 'hidden' }}>
 
       {/* ── Animated blob background ── */}
-      <div style={{ position:'absolute', top:-200, left:-200, width:700, height:700, borderRadius:'50%', background:'radial-gradient(circle, rgba(124,58,237,0.13) 0%, transparent 65%)', filter:'blur(60px)', animation:'blobA 14s ease-in-out infinite alternate', pointerEvents:'none', zIndex:0 }} />
-      <div style={{ position:'absolute', bottom:-150, right:-150, width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle, rgba(28,78,216,0.13) 0%, transparent 65%)', filter:'blur(60px)', animation:'blobB 12s ease-in-out infinite alternate', pointerEvents:'none', zIndex:0 }} />
-      <div style={{ position:'absolute', top:'40%', left:'50%', width:400, height:400, borderRadius:'50%', background:'radial-gradient(circle, rgba(236,72,153,0.06) 0%, transparent 65%)', filter:'blur(40px)', animation:'blobC 16s ease-in-out infinite alternate', pointerEvents:'none', zIndex:0 }} />
+      <div style={{ position:'absolute', top:-200, left:-200, width:700, height:700, borderRadius:'50%', background:'radial-gradient(circle, rgba(255, 107, 0, 0.15) 0%, transparent 65%)', filter:'blur(60px)', animation:'blobA 14s ease-in-out infinite alternate', pointerEvents:'none', zIndex:0 }} />
+      <div style={{ position:'absolute', bottom:-150, right:-150, width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 65%)', filter:'blur(60px)', animation:'blobB 12s ease-in-out infinite alternate', pointerEvents:'none', zIndex:0 }} />
+      <div style={{ position:'absolute', top:'40%', left:'50%', width:400, height:400, borderRadius:'50%', background:'radial-gradient(circle, rgba(255, 107, 0, 0.06) 0%, transparent 65%)', filter:'blur(40px)', animation:'blobC 16s ease-in-out infinite alternate', pointerEvents:'none', zIndex:0 }} />
 
       {/* ── LEFT PANEL ── */}
       <motion.div
@@ -100,7 +100,7 @@ export default function ProviderLoginPage() {
               <Image src="/logo/FixHublogo.png" alt="FixHub" width={48} height={48} style={{ borderRadius:'50%', marginBottom:20 }} />
             </Link>
             <h1 style={{ fontFamily:'Outfit,sans-serif', fontSize:'clamp(1.8rem,3vw,2.4rem)', fontWeight:800, color:'#fff', letterSpacing:-0.5, marginBottom:10, lineHeight:1.15 }}>
-              Provider <span style={{ background:'linear-gradient(90deg,#60a5fa,#a78bfa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>Portal</span>
+              Provider <span style={{ background:'linear-gradient(90deg,#ff6b00,#ff9c00)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>Portal</span>
             </h1>
             <p style={{ fontSize:14, color:'#64748b', lineHeight:1.7 }}>
               Manage your service requests, track earnings, and grow your business.
@@ -111,11 +111,11 @@ export default function ProviderLoginPage() {
             {features.map(({ icon: Icon, label, desc }) => (
               <motion.div
                 key={label} variants={fadeUp}
-                whileHover={{ scale: 1.03, boxShadow:'0 0 20px rgba(96,165,250,0.12)' }}
+                whileHover={{ scale: 1.03, boxShadow:'0 0 20px rgba(255, 107, 0, 0.12)' }}
                 style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 18px', background:'rgba(255,255,255,0.04)', backdropFilter:'blur(12px)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:14, cursor:'default', transition:'all 0.25s ease' }}
               >
-                <div style={{ width:38, height:38, borderRadius:10, background:'linear-gradient(135deg,rgba(28,78,216,0.2),rgba(124,58,237,0.15))', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  <Icon size={17} color="#60a5fa" />
+                <div style={{ width:38, height:38, borderRadius:10, background:'linear-gradient(135deg,rgba(255, 107, 0, 0.15),rgba(255, 255, 255, 0.05))', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <Icon size={17} color="#ff6b00" />
                 </div>
                 <div>
                   <p style={{ fontSize:13, fontWeight:700, color:'#f1f5f9', marginBottom:2 }}>{label}</p>
@@ -135,7 +135,7 @@ export default function ProviderLoginPage() {
           style={{ width:'100%', maxWidth:420, background:'rgba(255,255,255,0.04)', backdropFilter:'blur(20px)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:24, padding:'40px 36px', boxShadow:'0 24px 64px rgba(0,0,0,0.4)' }}
         >
           {/* Badge */}
-          <div style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:11, fontWeight:700, letterSpacing:'0.8px', textTransform:'uppercase', color:'#60a5fa', background:'rgba(96,165,250,0.1)', border:'1px solid rgba(96,165,250,0.2)', borderRadius:20, padding:'5px 14px', marginBottom:20 }}>
+          <div style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:11, fontWeight:700, letterSpacing:'0.8px', textTransform:'uppercase', color:'#ff6b00', background:'rgba(255, 107, 0, 0.1)', border:'1px solid rgba(255, 107, 0, 0.2)', borderRadius:20, padding:'5px 14px', marginBottom:20 }}>
             <Zap size={12} /> Provider Login
           </div>
           <h2 style={{ fontFamily:'Outfit,sans-serif', fontSize:26, fontWeight:800, color:'#f1f5f9', marginBottom:6, letterSpacing:-0.5 }}>Sign In</h2>
@@ -163,7 +163,7 @@ export default function ProviderLoginPage() {
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
                   style={{ position:'absolute', right:13, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'#475569', cursor:'pointer', display:'flex', transition:'color 0.15s' }}
-                  onMouseOver={(e) => (e.currentTarget.style.color = '#60a5fa')}
+                  onMouseOver={(e) => (e.currentTarget.style.color = '#ff6b00')}
                   onMouseOut={(e) => (e.currentTarget.style.color = '#475569')}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -173,9 +173,9 @@ export default function ProviderLoginPage() {
 
             <motion.button
               type="submit" disabled={loading}
-              whileHover={{ scale: 1.03, boxShadow:'0 8px 28px rgba(28,78,216,0.45)' }}
+              whileHover={{ scale: 1.03, boxShadow:'0 8px 28px rgba(255, 107, 0, 0.45)' }}
               whileTap={{ scale: 0.97 }}
-              style={{ width:'100%', padding:'13px', fontSize:14, fontWeight:700, color:'#fff', background:'linear-gradient(135deg, #1c4ed8 0%, #7c3aed 100%)', border:'none', borderRadius:12, cursor: loading ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity: loading ? 0.65 : 1, boxShadow:'0 4px 18px rgba(28,78,216,0.3)', fontFamily:'inherit', transition:'opacity 0.2s', marginTop:4 }}
+              style={{ width:'100%', padding:'13px', fontSize:14, fontWeight:700, color:'#fff', background:'linear-gradient(135deg, #ff6b00 0%, #cc5600 100%)', border:'none', borderRadius:12, cursor: loading ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity: loading ? 0.65 : 1, boxShadow:'0 4px 18px rgba(255, 107, 0, 0.3)', fontFamily:'inherit', transition:'opacity 0.2s', marginTop:4 }}
             >
               {loading ? <><Loader2 size={16} className="al-spin" /> Signing in...</> : <>Sign In <ArrowRight size={15} /></>}
             </motion.button>
@@ -184,7 +184,7 @@ export default function ProviderLoginPage() {
           <div style={{ height:1, background:'rgba(255,255,255,0.06)', margin:'24px 0' }} />
           <p style={{ textAlign:'center', fontSize:13, color:'#475569' }}>
             Not a provider?{' '}
-            <Link href="/login" style={{ color:'#60a5fa', fontWeight:700 }}>Customer Login</Link>
+            <Link href="/login" style={{ color:'#ff6b00', fontWeight:700 }}>Customer Login</Link>
           </p>
         </motion.div>
       </div>

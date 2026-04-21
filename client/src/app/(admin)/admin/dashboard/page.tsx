@@ -14,21 +14,22 @@ import {
   X,
   FileText,
   User,
-  ExternalLink
+  ExternalLink,
+  Settings,
+  BarChart3,
+  Check
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { adminApi } from '@/services/api/admin';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { containerVariants, fadeUpVariant, scaleUpVariant } from '@/lib/animations';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-/** Build a full media URL from a stored path/filename */
 const mediaUrl = (path: string | null | undefined): string | null => {
   if (!path) return null;
   if (path.startsWith('http')) return path;
-  // strip leading slash if present, then prepend API_URL
   return `${API_URL}/${path.replace(/^\//, '')}`;
 };
 
@@ -42,9 +43,8 @@ export default function AdminDashboardPage() {
     ratings: [] as any[],
   });
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState(null);
+  const [status, setStatus] = useState<string | null>(null);
 
-  // Provider Approval Modal State
   const [approvalModal, setApprovalModal] = useState<any>(null);
   const [approvalLoading, setApprovalLoading] = useState(false);
 
@@ -55,7 +55,7 @@ export default function AdminDashboardPage() {
           adminApi.getAdmins(),
           adminApi.getCustomers(),
           adminApi.getProviders(),
-          adminApi.getServiceProviders(), // Should get all providers including pending
+          adminApi.getServiceProviders(),
           adminApi.getBookings(),
           adminApi.getRatings(),
         ]);
@@ -83,17 +83,16 @@ export default function AdminDashboardPage() {
     fetchDashboardData();
   }, []);
 
-  const handleApproveReject = async (id: string, status: 'approve' | 'reject') => {
-    setStatus(status);
+  const handleApproveReject = async (id: string, newStatus: 'approve' | 'reject') => {
+    setStatus(newStatus);
     setApprovalLoading(true);
     try {
-      await adminApi.approveProvider(id, status);
-      toast.success(`Provider ${status === 'approve' ? 'approved' : 'rejected'} successfully!`);
-      // Fully refetch to instantly mutate tabs & badges natively without manual refreshes.
+      await adminApi.approveProvider(id, newStatus);
+      toast.success(`Provider ${newStatus === 'approve' ? 'approved' : 'rejected'} successfully!`);
       await fetchDashboardData();
       setApprovalModal(null);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || `Failed to ${status} provider`);
+      toast.error(err.response?.data?.message || `Failed to ${newStatus} provider`);
     } finally {
       setApprovalLoading(false);
     }
@@ -101,9 +100,9 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', flexDirection: 'column', gap: 16 }}>
-        <Loader2 size={32} color="#eb5e28" className="al-spin" />
-        <p style={{ color: '#64748b' }}>Loading dashboard data...</p>
+      <div className="flex flex-col items-center justify-center min-h-[70vh] gap-4">
+        <Loader2 className="w-12 h-12 text-[#FF6B00] animate-spin" />
+        <p className="text-[#94a3b8] font-medium animate-pulse">Initializing Dashboard...</p>
       </div>
     );
   }
@@ -114,28 +113,17 @@ export default function AdminDashboardPage() {
       : '—';
 
   const stats = [
-    { label: 'Total Customers', value: data.customers.length.toString(), change: '+12%', trend: 'up', icon: Users, accent: 'blue' },
-    { label: 'Total Providers', value: data.providers.length.toString(), change: '+5%', trend: 'up', icon: UserCheck, accent: 'green' },
-    { label: 'Total Bookings', value: data.bookings.length.toString(), change: '+18%', trend: 'up', icon: CalendarDays, accent: 'orange' },
-    { label: 'Avg Rating', value: avgRating, change: 'live', trend: 'up', icon: Star, accent: 'purple' },
+    { label: 'Total Users', value: data.customers.length.toString(), icon: Users },
+    { label: 'Providers', value: data.providers.length.toString(), icon: UserCheck },
+    { label: 'Bookings', value: data.bookings.length.toString(), icon: CalendarDays },
+    { label: 'Revenue', value: '₹' + (data.bookings.length * 150), icon: BarChart3 }, 
   ];
 
-  const recentBookings = [...data.bookings]
-    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5)
-    .map((b: any) => ({
-      id: b._id.slice(-6).toUpperCase(),
-      customer: b.customer_id?.user_name || b.customer_id?.name || 'Unknown',
-      service: b.service_provider_id?.service_id?.service_name || b.service_id?.service_name || 'Service',
-      status: b.status,
-      date: new Date(b.scheduled_date || b.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-    }));
-
   const recentActivity = [
-    { text: <><strong>System</strong> loaded fresh analytics data</>, time: 'Just now', dot: 'green' },
-    { text: <><strong>{data.bookings.length} Bookings</strong> currently tracked</>, time: 'Live', dot: 'blue' },
-    { text: <><strong>{data.customers.length} Customers</strong> have registered</>, time: 'Live', dot: 'purple' },
-    { text: <><strong>{data.admins.length} Admins</strong> in system</>, time: 'Live', dot: 'green' },
+    { text: `System initialized with latest data`, time: 'Just now', type: 'system' },
+    { text: `${data.bookings.length} Bookings successfully tracked`, time: 'Live', type: 'booking' },
+    { text: `${data.customers.length} Customers have registered`, time: 'Live', type: 'user' },
+    { text: `${data.admins.length} Admins currently online`, time: 'Live', type: 'admin' },
   ];
 
   const pendingProviders = data.serviceProviders
@@ -151,270 +139,300 @@ export default function AdminDashboardPage() {
       id: sp.provider_id,
     }));
 
-  // console.log(data.serviceProviders);
-
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible">
-      {/* Page Header */}
-      <div className="dashboard-page-header">
-        <h1 className="dashboard-page-title">Dashboard Overview</h1>
-        <p className="dashboard-page-subtitle">Welcome back! Here's what's happening with FixHub today.</p>
-      </div>
+    <div className="relative min-h-[100vh] bg-transparent text-white overflow-hidden pb-12">
+      
+      {/* BACKGROUND EFFECTS */}
+      <div className="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-[#FF6B00] blur-[150px] opacity-20 pointer-events-none rounded-full" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#4338CA] blur-[180px] opacity-20 pointer-events-none rounded-full" />
+      <div className="absolute top-[40%] left-[20%] w-[300px] h-[300px] bg-[#FF6B00] blur-[120px] opacity-10 pointer-events-none rounded-full" />
 
-      {/* Stats Grid */}
-      <div className="stats-grid">
-        {stats.map((s) => (
-          <motion.div variants={fadeUpVariant} whileHover={{ scale: 1.02 }} key={s.label} className="stat-card">
-            <div className="stat-card-top">
-              <div className={`stat-card-icon ${s.accent}`}>
-                <s.icon size={22} />
-              </div>
-              <span className={`stat-card-change ${s.trend}`}>
-                <TrendingUp size={12} />
-                {s.change}
-              </span>
-            </div>
-            <p className="stat-card-value">{s.value}</p>
-            <p className="stat-card-label">{s.label}</p>
+      {/* HERO SECTION */}
+      <motion.div 
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="relative z-10 w-full rounded-3xl p-8 mb-10 overflow-hidden flex flex-col md:flex-row items-center justify-between border border-white/5 bg-white/5 backdrop-blur-xl"
+        style={{
+          background: 'linear-gradient(135deg, rgba(255,107,0,0.1) 0%, rgba(11,15,26,0.5) 100%)',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)'
+        }}
+      >
+        <div className="relative z-20 max-w-xl">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight text-white">
+            Welcome to <span className="text-[#FF6B00]">FixHub</span>
+          </h1>
+          <p className="text-lg text-[#94a3b8] mb-8 leading-relaxed">
+            Monitor activity, manage service providers, and control your growing platform effortlessly.
+          </p>
+          <div className="flex gap-4">
+            <Link href="/admin/providers">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-6 py-3 bg-[#FF6B00] hover:bg-[#e05a00] text-white font-semibold rounded-xl flex items-center gap-2 transition-colors shadow-[0_0_20px_rgba(255,107,0,0.3)]"
+              >
+                <CheckCircle size={18} /> Approve Providers
+              </motion.button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Right side graphic */}
+        <div className="relative z-20 mt-8 md:mt-0 right-0 w-[200px] h-[200px] md:w-[300px] md:h-[300px] opacity-80 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-tr from-[#FF6B00] to-[#FFFFFF] rounded-full blur-[60px] opacity-20" />
+          <motion.div 
+            animate={{ y: [0, -15, 0] }} 
+            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+            className="w-full h-full border-[10px] border-white/5 rounded-3xl rotate-12 flex items-center justify-center bg-black/40 backdrop-blur-md shadow-2xl"
+          >
+             <ShieldCheck size={100} className="text-[#FF6B00]" />
           </motion.div>
-        ))}
-      </div>
-
-      {/* Admins count mini-card */}
-      <motion.div variants={fadeUpVariant} style={{ marginBottom: 28 }}>
-        <div className="data-card" style={{ display: 'inline-flex', alignItems: 'center', gap: 14, padding: '14px 22px' }}>
-          <div className="stat-card-icon blue" style={{ width: 36, height: 36, borderRadius: 10 }}>
-            <ShieldCheck size={18} />
-          </div>
-          <div>
-            <p style={{ fontSize: 20, fontWeight: 700, color: '#f1f5f9', lineHeight: 1 }}>{data.admins.length}</p>
-            <p style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>Registered Admins</p>
-          </div>
         </div>
       </motion.div>
 
-      {/* Main Content Grid */}
-      <div className="dashboard-grid">
-        {/* Recent Bookings Table */}
-        <motion.div variants={fadeUpVariant} className="data-card">
-          <div className="data-card-header">
-            <h2 className="data-card-title">Recent Bookings</h2>
-            <Link href="/admin/bookings">
-              <button className="data-card-action">View All →</button>
-            </Link>
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Left Column (Stats + Quick Actions) */}
+        <div className="lg:col-span-2 space-y-8">
+          
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {stats.map((stat, i) => (
+              <motion.div 
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: i * 0.1 }}
+                whileHover={{ scale: 1.03, y: -4 }}
+                className="relative overflow-hidden bg-white/5 border border-white/10 backdrop-blur-lg p-6 rounded-2xl flex flex-col items-center text-center group cursor-pointer"
+              >
+                {/* Glow Effect */}
+                <div className="absolute inset-0 bg-gradient-to-b from-[#FF6B00]/0 to-[#FF6B00]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="w-12 h-12 bg-[#FF6B00]/10 rounded-xl flex items-center justify-center mb-4 text-[#FF6B00] group-hover:bg-[#FF6B00] group-hover:text-white transition-all duration-300">
+                  <stat.icon size={22} />
+                </div>
+                <h3 className="text-3xl md:text-3xl font-bold text-white mb-1 tracking-tight">{stat.value}</h3>
+                <p className="text-xs md:text-sm text-[#94a3b8] font-medium uppercase tracking-wider">{stat.label}</p>
+              </motion.div>
+            ))}
           </div>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Booking ID</th>
-                <th>Customer</th>
-                <th>Service</th>
-                <th>Date</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentBookings.length === 0 ? (
-                <tr><td colSpan={5} style={{ textAlign: 'center', color: '#64748b', padding: '40px 0' }}>No recent bookings found</td></tr>
-              ) : recentBookings.map((row) => (
-                <tr key={row.id}>
-                  <td style={{ color: '#eb5e28', fontWeight: 600, fontFamily: 'monospace' }}>{row.id}</td>
-                  <td>
-                    <div className="td-name">
-                      <div className="td-avatar">{row.customer[0]}</div>
-                      {row.customer}
-                    </div>
-                  </td>
-                  <td>{row.service}</td>
-                  <td style={{ color: '#64748b', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Clock size={13} /> {row.date}
-                  </td>
-                  <td>
-                    <span className={`badge ${row.status}`}>{row.status}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </motion.div>
 
-        {/* Right Column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-          {/* Pending Provider Approvals - STEP 5 & 6 */}
-          <motion.div variants={fadeUpVariant} className="data-card" style={{ border: '1px solid rgba(235, 94, 40, 0.2)' }}>
-            <div className="data-card-header">
-              <h2 className="data-card-title" style={{ color: '#eb5e28' }}>Pending Approvals</h2>
+          {/* Quick Actions */}
+          <motion.div 
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             transition={{ duration: 0.5, delay: 0.3 }}
+             className="bg-white/5 border border-white/10 backdrop-blur-lg rounded-2xl p-6"
+          >
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><Settings className="text-[#FF6B00]" size={20}/> Quick Actions</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Link href="/admin/providers">
-                <button className="data-card-action">View All →</button>
+                <motion.div whileHover={{ scale: 1.03 }} className="bg-black/40 border border-white/5 p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:border-[#FF6B00]/50 transition-colors">
+                   <div className="p-3 bg-[#FF6B00]/20 rounded-lg text-[#FF6B00]"><UserCheck size={20} /></div>
+                   <div>
+                     <p className="font-semibold text-sm">Approve Providers</p>
+                     <p className="text-xs text-[#64748b]">Review pending apps</p>
+                   </div>
+                </motion.div>
+              </Link>
+              <Link href="/admin/services">
+                <motion.div whileHover={{ scale: 1.03 }} className="bg-black/40 border border-white/5 p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:border-[#FF6B00]/50 transition-colors">
+                   <div className="p-3 bg-blue-500/20 rounded-lg text-blue-400"><Settings size={20} /></div>
+                   <div>
+                     <p className="font-semibold text-sm">Manage Services</p>
+                     <p className="text-xs text-[#64748b]">Edit platform services</p>
+                   </div>
+                </motion.div>
+              </Link>
+              <Link href="/admin/bookings">
+                <motion.div whileHover={{ scale: 1.03 }} className="bg-black/40 border border-white/5 p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:border-[#FF6B00]/50 transition-colors">
+                   <div className="p-3 bg-green-500/20 rounded-lg text-green-400"><FileText size={20} /></div>
+                   <div>
+                     <p className="font-semibold text-sm">View Reports</p>
+                     <p className="text-xs text-[#64748b]">Review system stats</p>
+                   </div>
+                </motion.div>
               </Link>
             </div>
-            <div style={{ padding: '8px 0' }}>
+          </motion.div>
+        
+        </div>
+
+        {/* Right Column (Activity & Approvals) */}
+        <div className="space-y-8">
+          
+          {/* Pending Approvals */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="bg-white/5 border border-white/10 backdrop-blur-lg rounded-2xl p-6 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF6B00]/10 blur-[50px]" />
+            <h2 className="text-xl font-bold mb-6 flex items-center justify-between">
+              <span className="flex items-center gap-2"><ShieldCheck className="text-[#FF6B00]" size={20}/> Approvals</span>
+              {pendingProviders.length > 0 && <span className="bg-[#FF6B00]/20 text-[#FF6B00] text-xs px-2 py-1 rounded-md">{pendingProviders.length} New</span>}
+            </h2>
+
+            <div className="space-y-4 relative z-10">
               {pendingProviders.length === 0 ? (
-                <p style={{ color: '#64748b', textAlign: 'center', padding: '20px 0' }}>No pending approvals.</p>
-              ) : pendingProviders.map((p, idx) => (
-                <div
-                  key={p.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '11px 22px',
-                    borderBottom: idx < pendingProviders.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                  }}
-                >
-                  <div className="td-name">
-                    <div className="td-avatar" style={{ background: 'linear-gradient(135deg, #eb5e28, #f59e0b)' }}>
+                <p className="text-[#64748b] text-sm text-center py-6">No pending providers.</p>
+              ) : pendingProviders.map((p: any) => (
+                <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-black/30 border border-white/5 hover:bg-black/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF6B00] to-orange-800 flex items-center justify-center font-bold text-white">
                       {p.name[0]}
                     </div>
                     <div>
-                      <p style={{ fontSize: 13, color: '#f1f5f9', fontWeight: 600 }}>{p.name}</p>
-                      <p style={{ fontSize: 11, color: '#94a3b8' }}>{p.email}</p>
+                      <p className="font-semibold text-sm text-white line-clamp-1">{p.name}</p>
+                      <p className="text-xs text-[#64748b]">{p.service}</p>
                     </div>
                   </div>
-
-                  {/* Bubble Animated Approve Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.05, boxShadow: '0 4px 15px rgba(235,94,40,0.3)' }}
-                    whileTap={{ scale: 0.95 }}
+                  <motion.button 
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
                     onClick={() => setApprovalModal(p)}
-                    style={{
-                      background: 'linear-gradient(135deg, #eb5e28, #f59e0b)',
-                      color: '#fff',
-                      border: 'none',
-                      padding: '6px 14px',
-                      borderRadius: 20,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4
-                    }}
+                    className="w-8 h-8 rounded-full bg-[#FF6B00]/20 text-[#FF6B00] flex items-center justify-center hover:bg-[#FF6B00] hover:text-white transition-colors"
                   >
-                    <CheckCircle size={14} /> Review
+                    <Check size={16} />
                   </motion.button>
                 </div>
               ))}
             </div>
           </motion.div>
 
-          {/* Activity Feed */}
-          <motion.div variants={fadeUpVariant} className="data-card">
-            <div className="data-card-header">
-              <h2 className="data-card-title">Recent Activity</h2>
-            </div>
-            <div className="activity-list">
-              {recentActivity.map((item, idx) => (
-                <div key={idx} className="activity-item">
-                  <div className={`activity-dot ${item.dot}`} />
+          {/* Activity Panel */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="bg-white/5 border border-white/10 backdrop-blur-lg rounded-2xl p-6"
+          >
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><Clock className="text-[#FF6B00]" size={20}/> Global Activity</h2>
+            <div className="space-y-5">
+              {recentActivity.map((item, i) => (
+                <div key={i} className="flex gap-4">
+                  <div className="relative mt-1">
+                    <div className={`w-3 h-3 rounded-full ${item.type === 'system' ? 'bg-[#FF6B00]' : item.type === 'booking' ? 'bg-blue-500' : 'bg-green-500'} shadow-[0_0_10px_currentColor]`} />
+                    {i !== recentActivity.length - 1 && <div className="absolute top-3 left-1.5 w-[1px] h-8 bg-white/10" />}
+                  </div>
                   <div>
-                    <p className="activity-text">{item.text}</p>
-                    <p className="activity-time">{item.time}</p>
+                    <p className="text-sm font-medium text-[#e2e8f0]">{item.text}</p>
+                    <p className="text-xs text-[#64748b] mt-0.5">{item.time}</p>
                   </div>
                 </div>
               ))}
             </div>
           </motion.div>
+
         </div>
       </div>
 
-      {/* ── Approval Modal (STEP 6) ── */}
+      {/* APPROVAL MODAL */}
       <AnimatePresence>
         {approvalModal && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setApprovalModal(null)}>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={() => setApprovalModal(null)}
+          >
             <motion.div
-              variants={scaleUpVariant}
-              initial="hidden"
-              animate="visible"
-              exit="hidden"
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              style={{ width: '100%', maxWidth: 540, background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, boxShadow: '0 32px 80px rgba(0,0,0,0.7)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}
+              className="w-full max-w-lg bg-[#0f172a] border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             >
-              <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
                 <div>
-                  <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Review Provider Profile</h2>
-                  <p style={{ fontSize: 13, color: '#94a3b8' }}>Approve or reject this provider's application.</p>
+                  <h2 className="text-xl font-bold text-white">Review Application</h2>
+                  <p className="text-xs text-[#94a3b8] mt-1">Approve or reject this provider.</p>
                 </div>
-                <button onClick={() => setApprovalModal(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><X size={20} /></button>
+                <button onClick={() => setApprovalModal(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-[#94a3b8]">
+                  <X size={20} />
+                </button>
               </div>
 
-              <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-                {/* Profile Header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div className="p-6 overflow-y-auto space-y-6">
+                <div className="flex items-center gap-4">
                   {approvalModal.profile_img_url ? (
-                    <img src={mediaUrl(approvalModal.profile_img_url) ?? ''} alt="Avatar" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.1)' }} />
+                    <img src={mediaUrl(approvalModal.profile_img_url) ?? ''} alt="Avatar" className="w-16 h-16 rounded-full object-cover border-2 border-[#FF6B00]" />
                   ) : (
-                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg, #eb5e28, #f59e0b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, color: '#fff', fontWeight: 700 }}>
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#FF6B00] to-orange-800 flex items-center justify-center text-2xl text-white font-bold">
                       {approvalModal.name[0]}
                     </div>
                   )}
                   <div>
-                    <h3 style={{ fontSize: 18, fontWeight: 700, color: '#f1f5f9' }}>{approvalModal.name}</h3>
-                    <p style={{ fontSize: 13, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 5 }}><User size={12} /> {approvalModal.email}</p>
+                    <h3 className="text-lg font-bold text-white">{approvalModal.name}</h3>
+                    <p className="text-sm text-[#94a3b8] flex items-center gap-1"><User size={14} /> {approvalModal.email}</p>
                   </div>
                 </div>
 
-                {/* Details Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div className="grid grid-cols-2 gap-4 bg-black/30 p-4 rounded-xl border border-white/5">
                   <div>
-                    <p style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Service Provided</p>
-                    <p style={{ fontSize: 14, color: '#f1f5f9', fontWeight: 500 }}>{approvalModal.service}</p>
+                    <p className="text-[10px] uppercase text-[#64748b] font-bold mb-1">Service</p>
+                    <p className="text-sm font-medium text-white">{approvalModal.service}</p>
                   </div>
                   <div>
-                    <p style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Experience</p>
-                    <p style={{ fontSize: 14, color: '#f1f5f9', fontWeight: 500 }}>{approvalModal.experience} yr.</p>
+                    <p className="text-[10px] uppercase text-[#64748b] font-bold mb-1">Experience</p>
+                    <p className="text-sm font-medium text-white">{approvalModal.experience} yrs.</p>
                   </div>
                   <div>
-                    <p style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Hourly Rate</p>
-                    <p style={{ fontSize: 14, color: '#f1f5f9', fontWeight: 500 }}>₹{approvalModal.charges_per_hour}/hr</p>
+                    <p className="text-[10px] uppercase text-[#64748b] font-bold mb-1">Rate</p>
+                    <p className="text-sm font-medium text-white">₹{approvalModal.charges_per_hour}/hr</p>
                   </div>
                   <div>
-                    <p style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Service Zip Code</p>
-                    <p style={{ fontSize: 14, color: '#f1f5f9', fontWeight: 500 }}>{approvalModal.service_area_zip?.[0] || 'N/A'}</p>
+                    <p className="text-[10px] uppercase text-[#64748b] font-bold mb-1">Service Area</p>
+                    <p className="text-sm font-medium text-white">{approvalModal.service_area_zip?.[0] || 'N/A'}</p>
                   </div>
                 </div>
 
-                {/* ID Document */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9' }}>Uploaded Legal ID / Proof Document</p>
+                <div className="space-y-2">
+                  <p className="text-sm font-bold text-white">Legal ID Document</p>
                   {(() => {
                     const url = mediaUrl(approvalModal.doc_url);
-                    if (!url) return <p style={{ fontSize: 13, color: '#ef4444' }}>No document uploaded</p>;
+                    if (!url) return <p className="text-sm text-red-400">No document uploaded</p>;
                     const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
                     return isImage ? (
-                      <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
-                        <img src={url} alt="Provider document" style={{ width: '100%', maxHeight: 280, objectFit: 'cover', display: 'block' }} />
-                        <a href={url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', background: 'rgba(59,130,246,0.1)', color: '#60a5fa', fontSize: 12, textDecoration: 'none' }}>
-                          <ExternalLink size={13} /> Open full image
+                      <div className="rounded-xl overflow-hidden border border-white/10 group relative">
+                        <img src={url} alt="ID" className="w-full h-48 object-cover" />
+                        <a href={url} target="_blank" rel="noreferrer" className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold flex flex-col gap-2">
+                          <ExternalLink size={24} /> Open Full
                         </a>
                       </div>
                     ) : (
-                      <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
-                        <iframe src={url} title="Provider document" style={{ width: '100%', height: 260, border: 'none', background: '#fff' }} />
-                        <a href={url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', background: 'rgba(59,130,246,0.1)', color: '#60a5fa', fontSize: 12, textDecoration: 'none' }}>
-                          <FileText size={13} /> Open in new tab
-                        </a>
-                      </div>
+                      <a href={url} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-3 bg-white/5 rounded-xl text-blue-400 text-sm hover:bg-white/10 transition">
+                        <FileText size={18} /> View Document
+                      </a>
                     );
                   })()}
                 </div>
-
               </div>
 
-              <div style={{ padding: '20px 24px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-                <button type="button" onClick={() => handleApproveReject(approvalModal.id, 'reject')} disabled={approvalLoading} className="pv-btn pv-btn-danger">
-                  {(approvalLoading && status == 'reject') ? <Loader2 className="al-spin" size={16} /> : '✗ Reject'}
+              <div className="p-6 bg-black/40 border-t border-white/5 flex gap-3 justify-end">
+                <button 
+                  onClick={() => handleApproveReject(approvalModal.id, 'reject')} 
+                  disabled={approvalLoading} 
+                  className="px-6 py-2.5 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 font-semibold transition"
+                >
+                  {(approvalLoading && status == 'reject') ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Reject'}
                 </button>
-                <button type="button" onClick={() => handleApproveReject(approvalModal.id, 'approve')} disabled={approvalLoading} className="pv-btn pv-btn-success" style={{ background: '#22c55e', color: '#fff' }}>
-                  {(approvalLoading && status == 'approve') ? <Loader2 className="al-spin" size={16} /> : '✓ Accept'}
+                <button 
+                  onClick={() => handleApproveReject(approvalModal.id, 'approve')} 
+                  disabled={approvalLoading} 
+                  className="px-6 py-2.5 rounded-xl bg-[#FF6B00] hover:bg-[#e05a00] text-white font-semibold flex items-center gap-2 transition shadow-[0_4px_20px_rgba(255,107,0,0.4)]"
+                >
+                  {(approvalLoading && status == 'approve') ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Check size={18} /> Approve</>}
                 </button>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
-    </motion.div>
+    </div>
   );
 }

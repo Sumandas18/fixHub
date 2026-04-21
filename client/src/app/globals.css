@@ -1,20 +1,18 @@
 :root {
   /* Color Palette */
-  --color-orange: #eb5e28; /* Matt orange */
-  --color-orange-hover: #d2501e;
-  --color-blue: #1c4ed8;   /* Deep bright blue */
-  --color-blue-hover: #1e40af;
+  --color-orange: #ff6b00; /* Vibrant Orange */
+  --color-orange-hover: #e65a00;
   --color-white: #ffffff;
-  --color-offwhite: #f1f5f9;
-  --color-black: #0b0f19; /* Premium deep blue-black */
-  --color-dark-gray: #151c2c;
+  --color-offwhite: #f8fafc;
+  --color-black: #050810; /* Deeper Black */
+  --color-dark-gray: #0f172a;
   --color-gray: #64748b;
   --color-light-gray: #e2e8f0;
   
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #eb5e28, #1c4ed8);
-  --gradient-purple: linear-gradient(135deg, #a855f7, #6366f1);
-  --gradient-pink: linear-gradient(135deg, #ec4899, #f43f5e);
+  --gradient-primary: linear-gradient(135deg, #ff6b00, #ff8a00);
+  --gradient-dark: linear-gradient(135deg, #050810, #0f172a);
+  --gradient-orange-glow: radial-gradient(circle, rgba(255, 107, 0, 0.15) 0%, transparent 70%);
   
   /* Fonts */
   --font-heading: 'Outfit', 'Inter', system-ui, sans-serif;
@@ -88,34 +86,13 @@ h1, h2, h3, h4, h5, h6 {
   color: transparent;
 }
 
-.gradient-text-purple {
-  background: var(--gradient-purple);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-/* Glassmorphism Generic Utility */
-.glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  border-radius: 16px;
-}
-
-/* Spinner (shared across roles) */
-@keyframes al-spin { to { transform: rotate(360deg); } }
-.al-spin { animation: al-spin 0.8s linear infinite; }
-
 /* Gradient mesh background utility */
 .bg-mesh {
   background-color: var(--color-black);
   background-image:
-    radial-gradient(at 20% 30%, rgba(235,94,40,0.06) 0px, transparent 55%),
-    radial-gradient(at 80% 10%, rgba(28,78,216,0.08) 0px, transparent 50%),
-    radial-gradient(at 60% 80%, rgba(139,92,246,0.06) 0px, transparent 50%);
+    radial-gradient(at 20% 30%, rgba(255, 107, 0, 0.08) 0px, transparent 55%),
+    radial-gradient(at 80% 10%, rgba(255, 255, 255, 0.03) 0px, transparent 50%),
+    radial-gradient(at 60% 80%, rgba(255, 107, 0, 0.05) 0px, transparent 50%);
 }
 
 /* Page fade-in utility */
